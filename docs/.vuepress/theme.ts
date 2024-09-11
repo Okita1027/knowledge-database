@@ -125,11 +125,11 @@ export default hopeTheme({
     // 在这里配置主题提供的插件
     plugins: {
 
-        docsearch: {
-            appId: "AWSKYW5GBL",
-            apiKey: "bde9b1a8aa183d5a239eb6c030c8c835",
-            indexName: "okita1027io",
-        },
+        // docsearch: {
+        //     appId: "AWSKYW5GBL",
+        //     apiKey: "bde9b1a8aa183d5a239eb6c030c8c835",
+        //     indexName: "okita1027io",
+        // },
 
         copyCode: {
             // 在移动端显示复制按钮
