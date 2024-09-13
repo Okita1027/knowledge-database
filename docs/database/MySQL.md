@@ -4,7 +4,7 @@ order: 4
 ---
 ## 查询语句
 ### Union
-**合并查询结果 **利用UNION关键字，可以给出多条SELECT语句，并将它们的结果组合成单个结果集。合并 时，两个表对应的列数和数据类型必须相同，并且相互对应。各个SELECT语句之间使用UNION或UNION ALL关键字分隔。 
+**合并查询结果**利用UNION关键字，可以给出多条SELECT语句，并将它们的结果组合成单个结果集。合并 时，两个表对应的列数和数据类型必须相同，并且相互对应。各个SELECT语句之间使用UNION或UNION ALL关键字分隔。 
 语法格式：
 ```sql
 SELECT column,... FROM table1
@@ -122,8 +122,8 @@ from A表 right join B表
 on 关联条件
 where 从表关联字段 is null and 等其他子句
 ```
-## **SQL99新特性**
-### **自然连接 **
+## SQL99新特性
+### 自然连接
 SQL99 在 SQL92 的基础上提供了一些特殊语法，比如 NATURAL JOIN 用来表示自然连接。我们可以把自然连接理解为 SQL92 中的等值连接。它会帮你自动查询两张连接表中 所有相同的字段 ，然后进行 等值连接 。 
 在SQL92标准中：
 ```sql
@@ -162,7 +162,7 @@ WHERE e.department_id = d.department_id;
 上述就是事务的四大特性，简称**ACID**。
 ### 并发事务问题
 
-- **赃读**：一个事务读到另外一个事务还没有提交的数据。
+- **脏读**：一个事务读到另外一个事务还没有提交的数据。
 
 ![image.png](https://cdn.jsdelivr.net/gh/Okita1027/knowledge-database-images@main/database/mysql/transaction01.png)
 例如：B读取到了A未提交的数据。
@@ -694,7 +694,7 @@ mysqldump --single-transaction -uroot –p123456 itcast > itcast.sql
 - 释放锁：unlock tables; 或者客户端断开连接
 #### 元数据锁
 meta data lock , 元数据锁，简写MDL。 
-MDL加锁过程是系统自动控制，无需显式使用，在访问一张表的时候会自动加上。MDL锁主要作用是维护表元数据的数据一致性，在表上有活动事务的时候，不可以对元数据进行写入操作。**为了避免DML与DDL冲突，保证读写的正确性。 **
+MDL加锁过程是系统自动控制，无需显式使用，在访问一张表的时候会自动加上。MDL锁主要作用是维护表元数据的数据一致性，在表上有活动事务的时候，不可以对元数据进行写入操作。**为了避免DML与DDL冲突，保证读写的正确性**
 这里的元数据，可以简单理解为就是一张表的表结构。 也就是说，某一张表涉及到未提交的事务时，是不能够修改这张表的表结构的。 
 在MySQL5.5中引入了MDL，当对一张表进行增删改查的时候，加MDL读锁(共享)；当对表结构进行变更操作的时候，加MDL写锁(排他)。 
 常见的SQL操作时，所添加的元数据锁：
@@ -804,7 +804,7 @@ SELECT * FROM student WHERE id >= 100 AND age <= 20;
 > 阻止另一个事务在同一间隙上采用间隙锁。
 
 ## InnoDB引擎
-### **逻辑存储结构 **
+### 逻辑存储结构
 InnoDB的逻辑存储结构如下图所示: ![image.png](https://cdn.jsdelivr.net/gh/Okita1027/knowledge-database-images@main/database/mysql/InnoDB01.png)
 1). 表空间表空间是InnoDB存储引擎逻辑结构的最高层， 如果用户启用了参数 innodb_file_per_table(在 
 8.0版本中默认开启) ，则每张表都会有一个表空间（xxx.ibd），一个mysql实例可以对应多个表空 
@@ -856,7 +856,7 @@ Change Buffer的意义是什么呢?
 
 自适应hash索引，用于优化对Buffer Pool数据的查询。MySQL的innoDB引擎中虽然没有直接支持hash索引，但是给我们提供了一个功能就是这个自适应hash索引。因为前面我们讲到过，hash索引在进行等值匹配时，一般性能是要高于B+树的，因为hash索引一般只需要一次IO即可，而B+树，可能需要几次匹配，所以hash索引的效率要高，但是hash索引又不适合做范围查询、模糊匹配等。 
 InnoDB存储引擎会监控对表上各索引页的查询，如果观察到在特定的条件下hash索引可以提升速度，则建立hash索引，称之为自适应hash索引。 
-**自适应哈希索引，无需人工干预，是系统根据情况自动完成。 **
+**自适应哈希索引，无需人工干预，是系统根据情况自动完成**
 参数： adaptive_hash_index
 
 4. Log Buffer
@@ -1332,7 +1332,7 @@ SHOW VARIABLES LIKE '%secure_file_priv%'
 上述的两个文件 score.sql 中记录的就是表结构文件，而 score.txt 就是表数据文件，但是需要注意表数据文件，并不是记录一条条的insert语句，而是按照一定的格式记录表结构中的数据。如下：
 ![image.png](https://cdn.jsdelivr.net/gh/Okita1027/knowledge-database-images@main/database/mysql/manage03.png)
 
-#### **mysqlimport/source**
+#### mysqlimport/source
 
 1. mysqlimport
 
