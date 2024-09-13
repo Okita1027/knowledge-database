@@ -7,7 +7,9 @@ categories: [PHP]
 tags: []
 ---
 ## 安装配置
+
 [PHP安装配置(Windows和Linux)-一篇就够了-腾讯云开发者社区-腾讯云](https://cloud.tencent.com/developer/article/1705262)
+
 ### Windows
 
 1. 下载、解压缩

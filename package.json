@@ -11,7 +11,7 @@
     "docs:clean-dev": "vuepress-vite dev docs --clean-cache",
     "docs:dev": "vuepress-vite dev docs",
     "docs:update-package": "pnpm dlx vp-update",
-    "push": "git add . && git commit -m docsearch && git push origin main",
+    "push": "git add . && git commit -m msg && git push origin main",
     "pushPage": "vuepress-vite build docs && cd docs/.vuepress/dist && git init && git add . && git commit -m deploy && git push -f https://github.com/Okita1027/knowledge-database.git main:gh-pages"
   },
   "keywords": [],
