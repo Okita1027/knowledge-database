@@ -608,6 +608,7 @@ private Address address;
 
 ### 索引创建
 
+<<<<<<< Updated upstream
 
 
 ## 审计
@@ -947,4 +948,125 @@ adminDB.runCommand(shardCmd);
 > [!tip]
 >
 > 通过设置 `@Sharded(immutableKey = true)`，Spring Data 不会尝试检查实体 shard 键是否已更改。
+=======
+#### @Indexed
+
+`@Indexed` 用于为文档中的单个字段创建普通索引。普通索引用于提高查询性能，尤其是针对单个字段的查询或排序。
+
+```java
+import org.springframework.data.mongodb.core.index.Indexed;
+import org.springframework.data.mongodb.core.mapping.Document;
+
+@Document
+public class User {
+    @Indexed
+    private String username;
+
+    private String email;
+}
+```
+
+在上面的例子中，`username` 字段会被索引，MongoDB 在查询时会优先使用该索引，提升查询效率。
+
+**可选参数**
+
+- `unique`：是否是唯一索引，防止重复值。默认为 `false`。
+- `direction`：指定排序方向，可以是 `IndexDirection.ASCENDING` 或 `IndexDirection.DESCENDING`。
+- `sparse`：如果为 `true`，则只为非 `null` 的字段创建索引。
+- `expireAfterSeconds`：设置索引过期时间，常用于 TTL（Time To Live）索引。
+
+```java
+@Indexed(unique = true, direction = IndexDirection.ASCENDING)
+private String email;
+```
+
+#### @GeoSpatialIndexed
+
+`@GeoSpatialIndexed` 用于在地理空间字段上创建地理空间索引，支持基于地理位置的查询。MongoDB 支持 `2d` 和 `2dsphere` 两种类型的地理空间索引。
+
+```java
+import org.springframework.data.mongodb.core.index.GeoSpatialIndexed;
+import org.springframework.data.mongodb.core.mapping.Document;
+import org.springframework.data.mongodb.core.geo.GeoJsonPoint;
+
+@Document
+public class Place {
+    @GeoSpatialIndexed(type = GeoSpatialIndexType.GEO_2DSPHERE)
+    private GeoJsonPoint location;
+}
+```
+
+在该例中，`location` 字段会创建一个 `2dsphere` 索引，用于处理地球表面上的地理坐标。
+
+**可选参数**
+
+- `type`：指定索引类型，常见的值有 `GEO_2D` 和 `GEO_2DSPHERE`。
+- `bits`：指定索引的精度，适用于 `GEO_2D` 类型索引。
+- `min`、`max`：用于 `GEO_2D` 类型索引，指定坐标范围。
+
+#### TextIndexed
+
+`@TextIndexed` 用于在字符串字段上创建全文搜索索引。MongoDB 支持全文搜索功能，允许对文档中的文本字段进行复杂的全文检索。
+
+```java
+import org.springframework.data.mongodb.core.index.TextIndexed;
+import org.springframework.data.mongodb.core.mapping.Document;
+
+@Document
+public class Article {
+    @TextIndexed
+    private String content;
+    
+    private String title;
+}
+```
+
+`content` 字段将被索引，用于全文搜索。在查询时，可以使用 `$text` 运算符对文本字段进行全文搜索。
+
+#### @CompoundIndex
+
+`@CompoundIndex` 用于在多个字段上创建复合索引。复合索引允许在多个字段的组合上进行索引，通常用于优化多个字段的查询条件。
+
+```java
+import org.springframework.data.mongodb.core.index.CompoundIndex;
+import org.springframework.data.mongodb.core.mapping.Document;
+
+@Document
+@CompoundIndex(def = "{'firstName': 1, 'lastName': -1}", name = "name_index")
+public class Person {
+    private String firstName;
+    private String lastName;
+}
+```
+
+这个例子中，`firstName` 和 `lastName` 字段上创建了一个复合索引。`firstName` 以升序排序，`lastName` 以降序排序。
+
+**可选参数**`def`：索引定义，使用 JSON 字符串来表示字段和排序方向。
+
+- `name`：索引名称。
+- `unique`：是否为唯一索引。
+- `sparse`：是否为稀疏索引。
+
+#### @WildcardIndexed
+
+`@WildcardIndexed` 是 MongoDB 4.2 引入的功能，允许对文档中的任意字段或嵌套字段创建索引。`@WildcardIndexed` 用于创建通配符索引，适用于动态数据结构或包含未知字段的文档。
+
+```java
+import org.springframework.data.mongodb.core.index.WildcardIndexed;
+import org.springframework.data.mongodb.core.mapping.Document;
+
+@Document
+public class DynamicData {
+    @WildcardIndexed
+    private Map<String, Object> attributes;
+}
+```
+
+在这个例子中，`attributes` 字段是一个动态字段集合，`@WildcardIndexed` 会为所有的子字段创建索引。
+
+**可选参数**
+
+- `name`：索引的名称。
+- `wildcardProjection`：用于指定哪些字段应包含在索引中或排除。
+>>>>>>> Stashed changes
 
