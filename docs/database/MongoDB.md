@@ -607,3 +607,344 @@ private Address address;
 - **事务友好**：由于手动管理引用是基于简单的 `_id` 字段，适合与 MongoDB 的事务机制搭配使用。
 
 ### 索引创建
+
+
+
+## 审计
+
+审计功能允许你自动记录实体的创建和修改信息，比如创建时间、最后修改时间、创建人、修改人等。通过使用 `@EnableMongoAuditing` 注解，Spring 会自动为 MongoDB 实体启用审计功能。
+
+Spring 提供了几个常用的注解，用于标识实体中的审计字段：
+
+- **`@CreatedDate`**：标记创建时间字段。
+- **`@LastModifiedDate`**：标记最后修改时间字段。
+- **`@CreatedBy`**：标记创建者字段。
+- **`@LastModifiedBy`**：标记最后修改者字段。
+
+**实现步骤**
+
+1. 在配置类上添加 `@EnableMongoAuditing` 注解来启用审计功能
+
+```java
+import org.springframework.context.annotation.Configuration;
+import org.springframework.data.mongodb.config.EnableMongoAuditing;
+
+@Configuration
+@EnableMongoAuditing
+public class MongoConfig {
+}
+```
+
+2. 在你的实体类中，使用相关的审计注解来标记需要自动维护的字段
+
+```java
+import org.springframework.data.annotation.CreatedDate;
+import org.springframework.data.annotation.LastModifiedDate;
+import org.springframework.data.annotation.CreatedBy;
+import org.springframework.data.annotation.LastModifiedBy;
+import org.springframework.data.mongodb.core.mapping.Document;
+
+import java.time.LocalDateTime;
+
+@Document
+public class MyEntity {
+
+    @CreatedDate
+    private LocalDateTime createdDate;
+
+    @LastModifiedDate
+    private LocalDateTime lastModifiedDate;
+
+    @CreatedBy
+    private String createdBy;
+
+    @LastModifiedBy
+    private String lastModifiedBy;
+
+    // Getters and setters
+}
+```
+
+- `@CreatedDate`：当实体第一次持久化时，会自动设置 `createdDate` 字段。
+- `@LastModifiedDate`：每次实体被更新时，会自动更新 `lastModifiedDate` 字段。
+- `@CreatedBy`和`@LastModifiedBy`：分别记录创建者和最后修改者的信息。
+
+3.  配置 `AuditorAware`（可选，针对`@CreatedBy`和`@LastModifiedBy`）
+
+如果你希望在审计中记录创建者和修改者的信息，Spring 需要通过 `AuditorAware` 接口来提供当前用户或系统信息
+
+```java
+import org.springframework.context.annotation.Bean;
+import org.springframework.data.domain.AuditorAware;
+import org.springframework.stereotype.Component;
+
+import java.util.Optional;
+
+@Component
+public class AuditorAwareImpl implements AuditorAware<String> {
+
+    @Override
+    public Optional<String> getCurrentAuditor() {
+        // 这里可以返回当前的用户信息，例如从 Spring Security 中获取当前用户
+        return Optional.of("admin"); // 这里用 "admin" 作为示例
+    }
+}
+```
+
+```java
+import org.springframework.context.annotation.Bean;
+import org.springframework.context.annotation.Configuration;
+import org.springframework.data.domain.AuditorAware;
+
+@Configuration
+public class MongoAuditingConfig {
+
+    @Bean
+    public AuditorAware<String> auditorProvider() {
+        return new AuditorAwareImpl();
+    }
+}
+```
+
+4. 数据库结果
+
+当你向数据库中插入或更新实体时，Spring 会自动为你记录审计信息。例如，插入一条新记录后，MongoDB 文档可能如下所示：
+
+```java
+{
+  "_id": "some-id",
+  "createdDate": "2024-09-12T10:15:30",
+  "lastModifiedDate": "2024-09-12T10:15:30",
+  "createdBy": "admin",
+  "lastModifiedBy": "admin",
+  ...
+}
+```
+
+## 会话和事务
+
+### 会话
+
+会话是一种用于跟踪一系列操作的上下文。会话提供了一致的读写操作的隔离性和事务处理能力。
+
+**主要作用**
+
+- 事务支持：在启用会话时，MongoDB 可以在多个操作之间保持事务的一致性。
+- 持久连接：会话可以跟踪跨多个操作的上下文，支持多个命令共享同一个会话，从而实现跨多个集合和数据库的事务。
+- 读偏好和一致性控制：会话可以指定特定的读偏好，从而确保不同节点之间的数据一致性和响应时间控制。
+
+**使用示例**
+
+```java
+MongoClient mongoClient = MongoClients.create("mongodb://localhost:27017");
+ClientSession session = mongoClient.startSession();
+
+try {
+    // 开启会话后进行某些操作
+    MongoDatabase database = mongoClient.getDatabase("test");
+    MongoCollection<Document> collection = database.getCollection("myCollection");
+
+    session.startTransaction();
+    
+    collection.insertOne(session, new Document("name", "Alice"));
+    collection.insertOne(session, new Document("name", "Bob"));
+
+    session.commitTransaction();
+} catch (Exception e) {
+    session.abortTransaction();
+} finally {
+    session.close();
+}
+```
+
+### 事务
+
+在 Spring Data MongoDB 中，启用事务非常简单。你可以使用 `@Transactional` 注解来声明事务性操作：
+
+```java
+import org.springframework.transaction.annotation.Transactional;
+import org.springframework.data.mongodb.core.MongoTemplate;
+
+@Service
+public class MyService {
+
+    @Autowired
+    private MongoTemplate mongoTemplate;
+
+    @Transactional
+    public void doInTransaction() {
+        mongoTemplate.insert(new MyEntity("Alice"));
+        mongoTemplate.insert(new MyEntity("Bob"));
+    }
+}
+```
+
+> `@Transactional` 注解确保 `doInTransaction()` 方法中的所有操作作为一个事务执行。如果出现异常，事务会自动回滚。
+
+**事务管理器**
+
+为了在 Spring 中使用事务，你需要配置一个事务管理器：
+
+```java
+import org.springframework.context.annotation.Bean;
+import org.springframework.context.annotation.Configuration;
+import org.springframework.data.mongodb.MongoTransactionManager;
+import org.springframework.data.mongodb.core.MongoTemplate;
+
+@Configuration
+public class MongoConfig {
+
+    @Bean
+    public MongoTransactionManager transactionManager(MongoTemplate mongoTemplate) {
+        return new MongoTransactionManager(mongoTemplate.getDatabaseFactory());
+    }
+}
+```
+
+**会话与事务的关系**
+
+- **会话** 是事务的基础。在 MongoDB 中，事务必须运行在会话上下文中，因此每个事务都是会话的一部分。
+- **事务** 提供了跨多个数据库操作的原子性和一致性，而会话则提供了事务操作的上下文管理。
+
+**控制特定的事务选项**
+
+在 Spring Data MongoDB 中，虽然 `@Transactional` 可以简化事务管理，但在需要更多自定义控制事务行为的场景中，可以使用 `TransactionOptions` 和 `MongoTemplate` 配合自定义事务逻辑。
+
+```java
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.data.mongodb.core.MongoTemplate;
+import org.springframework.stereotype.Service;
+import com.mongodb.client.ClientSession;
+import com.mongodb.client.MongoClient;
+import com.mongodb.client.model.TransactionOptions;
+import com.mongodb.client.model.ReadConcern;
+import com.mongodb.client.model.WriteConcern;
+import java.util.concurrent.TimeUnit;
+
+@Service
+public class MyService {
+
+    @Autowired
+    private MongoTemplate mongoTemplate;
+
+    @Autowired
+    private MongoClient mongoClient;
+
+    public void doInCustomTransaction() {
+        TransactionOptions txnOptions = TransactionOptions.builder()
+            .readConcern(ReadConcern.SNAPSHOT)      // 读取快照
+            .writeConcern(WriteConcern.MAJORITY)    // 写入到大多数节点
+            .maxCommitTime(30L, TimeUnit.SECONDS)   // 最大提交时间为30秒
+            .build();
+
+        ClientSession session = mongoClient.startSession();
+
+        try {
+            session.startTransaction(txnOptions);
+
+            // 使用 MongoTemplate 在事务中进行操作
+            mongoTemplate.insert(new MyEntity("Alice"));
+            mongoTemplate.insert(new MyEntity("Bob"));
+
+            session.commitTransaction();
+        } catch (Exception e) {
+            session.abortTransaction();
+        } finally {
+            session.close();
+        }
+    }
+}
+```
+
+## 变更流
+
+> [!note]
+>
+> 变更流支持仅适用于副本集或分片集群。
+
+
+
+## 可追踪游标
+
+默认情况下，当客户端用尽光标提供的所有结果时，MongoDB 会自动关闭光标。用尽时关闭光标会将流变成有限流。对于 [capped 集合](https://docs.mongodb.com/manual/core/capped-collections/)，你可以使用在客户端使用所有最初返回的数据后仍然保持打开状态的 [可跟踪光标](https://docs.mongodb.com/manual/core/tailable-cursors/)。
+
+```java
+@SpringBootTest
+public class CursorTest {
+    @Autowired
+    private MongoClient mongoClient;
+    @Test
+    void test1() {
+        MongoDatabase db = mongoClient.getDatabase("learn");
+        MongoCursor<Document> cursor = db.getCollection("cappedColl")
+                .find()
+                .cursorType(CursorType.Tailable)
+                .iterator();
+
+        while (cursor.hasNext()) {
+            Document doc = cursor.next();
+            System.out.println(doc.toJson());
+        }
+
+    }
+}
+```
+
+
+
+## 分片
+
+`@Sharded` 注解来标识存储在分片集合中的实体
+
+```java
+@Document("users")
+@Sharded(shardKey = { "country", "userId" })
+public class User {
+
+	@Id
+	Long id;
+
+	@Field("userid")
+	String userId;
+
+	String country;
+}
+```
+
+- 分片键的属性映射到实际的字段名称。
+
+----
+
+**分片集合**
+
+Spring Data MongoDB 不会自动为集合设置分片，也不会为其设置所需的索引。以下代码片段展示了如何使用 MongoDB 客户端 API 来实现这一点。
+
+```java
+MongoDatabase adminDB = template.getMongoDbFactory()
+    .getMongoDatabase("admin");
+
+adminDB.runCommand(new Document("enableSharding", "db"));
+
+Document shardCmd = new Document("shardCollection", "db.users")
+	.append("key", new Document("country", 1).append("userid", 1));
+
+adminDB.runCommand(shardCmd);
+```
+
+- 分片命令需要针对 `admin` 数据库运行。
+- 如果需要，请为特定数据库启用分片。
+- 对已启用分片的数据库中的集合进行分片。
+- 指定分片键。此示例使用基于范围的分片。
+
+---
+
+**分片键处理**
+
+分片键由一个或多个属性组成，这些属性必须存在于目标集合中的每个文档中。它用于将文档分布到各个分片中。
+
+在实体上添加 `@Sharded` 注解，使 Spring Data MongoDB 能够应用分片场景所需的最佳努力优化。这意味着在更新实体时，如果不存在，则会将所需的 shard 键信息添加到 `replaceOne` 过滤器查询中。这可能需要额外的服务器往返才能确定当前 shard 键的实际值。
+
+> [!tip]
+>
+> 通过设置 `@Sharded(immutableKey = true)`，Spring Data 不会尝试检查实体 shard 键是否已更改。
+
