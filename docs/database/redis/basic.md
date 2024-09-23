@@ -667,12 +667,14 @@ XACK mystream mygroup message-id
 
 **主要操作**
 
-- **GEOADD**：将地理位置添加到键中。
-- **GEODIST**：计算两个地理位置之间的距离。
-- **GEOHASH**：获取地理位置的 GeoHash 表示。
-- **GEOPOS**：获取存储的地理位置。
-- **GEORADIUS**：根据指定半径查找范围内的地理位置。
-- **GEORADIUSBYMEMBER**：根据成员位置查找范围内的地理位置。
+- `GEOADD`：将地理位置添加到键中。
+- `GEODIST`：计算两个地理位置之间的距离。
+- `GEOHASH`：获取地理位置的 GeoHash 表示。
+  - 返回结果：将三维的地球变为二维的坐标，再转换为一维的点快，再转为二进制，最后通过base32编码。
+
+- `GEOPOS`：获取存储的地理位置。
+- `GEORADIUS`：根据指定半径查找范围内的地理位置。
+- `GEORADIUSBYMEMBER`：根据成员位置查找范围内的地理位置。
 
 ```shell
 # 将地理位置（经度，纬度）添加到 key 'cities' 中
@@ -701,9 +703,9 @@ GEORADIUS cities 13.361389 38.115556 100 km
 
 **主要操作**
 
-- **PFADD**：向 HyperLogLog 添加元素。
-- **PFCOUNT**：返回 HyperLogLog 中唯一元素的近似数量。
-- **PFMERGE**：合并多个 HyperLogLog。
+- `PFADD`：向 HyperLogLog 添加元素。
+- `PFCOUNT`：返回 HyperLogLog 中唯一元素的近似数量。
+- `PFMERGE`：合并多个 HyperLogLog。
 
 ```shell
 # 向名为 'hll' 的 HyperLogLog 中添加元素 'a', 'b', 'c'
