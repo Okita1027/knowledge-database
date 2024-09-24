@@ -412,4 +412,242 @@ public class GeoController
 }
 ```
 
-## BigMap
+## 布隆过滤器
+
+布隆过滤器(Bloom Filter) 是一种专门用来解决去重问题的高级数据结构。
+
+实质就是一个大型位数组和几个不同的无偏hash函数(无偏表示分布均匀)。由一个初值都为零的bit数组和多个哈希函数构成，用来快速判断某个数据是否存在。但是跟 HyperLogLog 一样，它也一样有那么一点点不精确，也存在一定的误判概率
+
+**特点**
+
+- 不能删除元素：标准布隆过滤器不支持删除操作，因为删除操作可能会影响其他元素的查询结果。
+- 判定元素是否存在时：存在代表大概率存在；不存在代表一定不存在。
+
+**原理**
+
+- 添加key时：使用多个hash函数对key进行hash运算得到一个整数索引值，对位数组长度进行取模运算得到一个位置，每个hash函数都会得到一个不同的位置，将这几个位置都置1就完成了add操作。
+- 查询key时：只要有其中一位是零就表示这个key不存在，但如果都是1，则不一定存在对应的key。
+
+**案例**
+
+```java
+@Component
+@Slf4j
+public class BloomFilterInit
+{
+    @Resource
+    private RedisTemplate redisTemplate;
+
+    @PostConstruct//初始化白名单数据，故意差异化数据演示效果......
+    public void init()
+    {
+        //白名单客户预加载到布隆过滤器
+        String uid = "customer:12";
+        //1 计算hashcode，由于可能有负数，直接取绝对值
+        int hashValue = Math.abs(uid.hashCode());
+        //2 通过hashValue和2的32次方取余后，获得对应的下标坑位
+        long index = (long) (hashValue % Math.pow(2, 32));
+        log.info(uid+" 对应------坑位index:{}",index);
+        //3 设置redis里面bitmap对应坑位，该有值设置为1
+        redisTemplate.opsForValue().setBit("whitelistCustomer",index,true);
+    }
+}
+```
+
+```java
+@Component
+@Slf4j
+public class CheckUtils
+{
+    @Resource
+    private RedisTemplate redisTemplate;
+
+    public boolean checkWithBloomFilter(String checkItem,String key)
+    {
+        int hashValue = Math.abs(key.hashCode());
+        long index = (long) (hashValue % Math.pow(2, 32));
+        boolean existOK = redisTemplate.opsForValue().getBit(checkItem, index);
+        log.info("----->key:"+key+"\t对应坑位index:"+index+"\t是否存在:"+existOK);
+        return existOK;
+    }
+}
+```
+
+```java
+@Service
+@Slf4j
+public class CustomerSerivce
+{
+    public static final String CACHE_KEY_CUSTOMER = "customer:";
+
+    @Resource
+    private CustomerMapper customerMapper;
+    @Resource
+    private RedisTemplate redisTemplate;
+
+    @Resource
+    private CheckUtils checkUtils;
+
+    public void addCustomer(Customer customer){
+        int i = customerMapper.insertSelective(customer);
+
+        if(i > 0)
+        {
+            //到数据库里面，重新捞出新数据出来，做缓存
+            customer=customerMapper.selectByPrimaryKey(customer.getId());
+            //缓存key
+            String key=CACHE_KEY_CUSTOMER+customer.getId();
+            //往mysql里面插入成功随后再从mysql查询出来，再插入redis
+            redisTemplate.opsForValue().set(key,customer);
+        }
+    }
+
+    public Customer findCustomerById(Integer customerId){
+        Customer customer = null;
+
+        //缓存key的名称
+        String key=CACHE_KEY_CUSTOMER+customerId;
+
+        //1 查询redis
+        customer = (Customer) redisTemplate.opsForValue().get(key);
+
+        //redis无，进一步查询mysql
+        if(customer==null)
+        {
+            //2 从mysql查出来customer
+            customer=customerMapper.selectByPrimaryKey(customerId);
+            // mysql有，redis无
+            if (customer != null) {
+                //3 把mysql捞到的数据写入redis，方便下次查询能redis命中。
+                redisTemplate.opsForValue().set(key,customer);
+            }
+        }
+        return customer;
+    }
+
+    /**
+     * BloomFilter → redis → mysql
+     * 白名单：whitelistCustomer
+     * @param customerId
+     * @return
+     */
+
+    @Resource
+    private CheckUtils checkUtils;
+    public Customer findCustomerByIdWithBloomFilter (Integer customerId)
+    {
+        Customer customer = null;
+
+        //缓存key的名称
+        String key = CACHE_KEY_CUSTOMER + customerId;
+
+        //布隆过滤器check，无是绝对无，有是可能有
+        //===============================================
+        if(!checkUtils.checkWithBloomFilter("whitelistCustomer",key))
+        {
+            log.info("白名单无此顾客信息:{}",key);
+            return null;
+        }
+        //===============================================
+
+        //1 查询redis
+        customer = (Customer) redisTemplate.opsForValue().get(key);
+        //redis无，进一步查询mysql
+        if (customer == null) {
+            //2 从mysql查出来customer
+            customer = customerMapper.selectByPrimaryKey(customerId);
+            // mysql有，redis无
+            if (customer != null) {
+                //3 把mysql捞到的数据写入redis，方便下次查询能redis命中。
+                redisTemplate.opsForValue().set(key, customer);
+            }
+        }
+        return customer;
+    }
+}
+```
+
+```java
+@Api(tags = "客户Customer接口+布隆过滤器讲解")
+@RestController
+@Slf4j
+public class CustomerController
+{
+    @Resource private CustomerSerivce customerSerivce;
+
+    @ApiOperation("数据库初始化2条Customer数据")
+    @RequestMapping(value = "/customer/add", method = RequestMethod.POST)
+    public void addCustomer() {
+        for (int i = 0; i < 2; i++) {
+            Customer customer = new Customer();
+
+            customer.setCname("customer"+i);
+            customer.setAge(new Random().nextInt(30)+1);
+            customer.setPhone("1381111xxxx");
+            customer.setSex((byte) new Random().nextInt(2));
+            customer.setBirth(Date.from(LocalDateTime.now().atZone(ZoneId.systemDefault()).toInstant()));
+
+            customerSerivce.addCustomer(customer);
+        }
+    }
+
+    @ApiOperation("单个用户查询，按customerid查用户信息")
+    @RequestMapping(value = "/customer/{id}", method = RequestMethod.GET)
+    public Customer findCustomerById(@PathVariable int id) {
+        return customerSerivce.findCustomerById(id);
+    }
+
+    @ApiOperation("BloomFilter案例讲解")
+    @RequestMapping(value = "/customerbloomfilter/{id}", method = RequestMethod.GET)
+    public Customer findCustomerByIdWithBloomFilter(@PathVariable int id) throws ExecutionException, InterruptedException
+    {
+        return customerSerivce.findCustomerByIdWithBloomFilter(id);
+    }
+}
+```
+
+**布谷鸟过滤器**
+
+能够解决布隆过滤器不能删除元素的问题，但成熟度和使用率不如布隆过滤器
+
+## 缓存预热、穿透、击穿、雪崩
+
+### 缓存预热
+
+对于热点key，事先在`@postconstrct`中初始化白名单数据
+
+### 缓存雪崩
+
+缓存雪崩是指在分布式系统中，当大量缓存同时过期或失效，导致大量请求直接访问后端数据库，从而引发数据库负载骤增，可能造成系统崩溃的现象。
+
+**预防/解决**
+
+1. 将key设置为永不过期、随机的过期时间
+2. 缓存集群实现高可用
+   - 主从+哨兵
+   - Redis Cluster
+   - 开启AOF、RDB，尽快恢复缓存集群
+3. 双重缓存
+   - ehcache本地缓存
+   - Redis缓存
+4. 服务限流、降级
+   - Hystrix
+   - Sentinel
+5. 购买Redis云数据库
+
+### 缓存穿透
+
+查询的数据不存在于Redis，也不存在于MySQL，频繁的此类查询会导致数据库压力过大而宕机。
+
+**解决方案1：缓存空对象**
+
+详见实战篇
+
+**解决方案2：Google的布隆过滤器Guava**
+
+
+
+### 缓存击穿
+
+
+
