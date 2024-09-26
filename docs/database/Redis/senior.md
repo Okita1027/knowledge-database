@@ -674,3 +674,316 @@ flowchart LR
 - 防死锁：有超时控制机制或撤销操作，有一个兜底的跳出方案
 - 不乱抢：自己的锁只能自己释放，A线程不能unlockB线程的锁。
 - 重入性：同一个节点的同一个线程获得锁之后，能够再次获取这个锁
+
+**代码实现**
+
+```JAVA
+@Component
+public class DistributedLockFactory
+{
+    @Autowired
+    private StringRedisTemplate stringRedisTemplate;
+    private String lockName;
+    private String uuidValue;
+
+    public DistributedLockFactory()
+    {
+        this.uuidValue = IdUtil.simpleUUID();//UUID
+    }
+
+    public Lock getDistributedLock(String lockType)
+    {
+        if(lockType == null) return null;
+
+        if(lockType.equalsIgnoreCase("REDIS")){
+            lockName = "zzyyRedisLock";
+            return new RedisDistributedLock(stringRedisTemplate,lockName,uuidValue);
+        } else if(lockType.equalsIgnoreCase("ZOOKEEPER")){
+            //TODO zookeeper版本的分布式锁实现
+            return new ZookeeperDistributedLock();
+        } else if(lockType.equalsIgnoreCase("MYSQL")){
+            //TODO mysql版本的分布式锁实现
+            return null;
+        }
+        return null;
+    }
+}
+```
+
+```JAVA
+public class RedisDistributedLock implements java.util.concurrent.locks.Lock {
+    private final StringRedisTemplate stringRedisTemplate;
+    private final String lockName; // KEYS[1]
+    private final String uuidValue; // ARGV[1]
+    private long expireTime; // ARGV[2] in seconds
+
+    private ScheduledExecutorService scheduler;
+
+    public RedisDistributedLock(StringRedisTemplate stringRedisTemplate, String lockName, String uuidValue) {
+        this.stringRedisTemplate = stringRedisTemplate;
+        this.lockName = lockName;
+        this.uuidValue = uuidValue + ":" + Thread.currentThread().getId();
+        this.expireTime = 30L;
+        this.scheduler = new ScheduledThreadPoolExecutor(1);
+    }
+
+    @Override
+    public void lock() {
+        tryLock(-1L, TimeUnit.SECONDS);
+    }
+
+    @Override
+    public boolean tryLock() {
+        try {
+            return tryLock(-1L, TimeUnit.SECONDS);
+        } catch (InterruptedException e) {
+            Thread.currentThread().interrupt();
+            return false;
+        }
+    }
+
+    @Override
+    public boolean tryLock(long time, TimeUnit unit) throws InterruptedException {
+        if (time != -1L) {
+            this.expireTime = unit.toSeconds(time);
+        }
+
+        String script =
+                "if redis.call('exists', KEYS[1]) == 0 or redis.call('hexists', KEYS[1], ARGV[1]) == 1 then " +
+                        "redis.call('hincrby', KEYS[1], ARGV[1], 1) " +
+                        "redis.call('expire', KEYS[1], ARGV[2]) " +
+                        "return 1 " +
+                        "else " +
+                        "return 0 " +
+                        "end";
+
+        while (!stringRedisTemplate.execute(new DefaultRedisScript<>(script, Boolean.class), Arrays.asList(lockName), uuidValue, String.valueOf(expireTime))) {
+            TimeUnit.MILLISECONDS.sleep(50);
+        }
+        renewExpire();
+        return true;
+    }
+
+    @Override
+    public void unlock() {
+        String script =
+                "if redis.call('hexists', KEYS[1], ARGV[1]) == 0 then " +
+                        "return nil " +
+                        "elseif redis.call('hincrby', KEYS[1], ARGV[1], -1) == 0 then " +
+                        "return redis.call('del', KEYS[1]) " +
+                        "else " +
+                        "return 0 " +
+                        "end";
+
+        Long flag = stringRedisTemplate.execute(new DefaultRedisScript<>(script, Long.class), Arrays.asList(lockName), uuidValue, String.valueOf(expireTime));
+        if (flag == null) {
+            throw new RuntimeException("This lock doesn't EXIST");
+        }
+        if (scheduler != null) {
+            scheduler.shutdownNow();
+        }
+    }
+
+    private void renewExpire() {
+        String script =
+                "if redis.call('hexists', KEYS[1], ARGV[1]) == 1 then " +
+                        "return redis.call('expire', KEYS[1], ARGV[2]) " +
+                        "else " +
+                        "return 0 " +
+                        "end";
+
+        scheduler.scheduleAtFixedRate(() -> {
+            if (stringRedisTemplate.execute(new DefaultRedisScript<>(script, Boolean.class), Arrays.asList(lockName), uuidValue, String.valueOf(expireTime))) {
+                renewExpire();
+            }
+        }, (this.expireTime * 1000) / 3, (this.expireTime * 1000) / 3, TimeUnit.MILLISECONDS);
+    }
+
+    @Override
+    public void lockInterruptibly() throws InterruptedException {
+        try {
+            if (!tryLock(-1L, TimeUnit.SECONDS)) {
+                throw new InterruptedException();
+            }
+        } catch (InterruptedException e) {
+            throw e;
+        }
+    }
+
+    @Override
+    public Condition newCondition() {
+        throw new UnsupportedOperationException("Distributed locks do not support conditions");
+    }
+}
+```
+
+```JAVA
+@Service
+@Slf4j
+public class InventoryService
+{
+    @Autowired
+    private StringRedisTemplate stringRedisTemplate;
+    @Value("${server.port}")
+    private String port;
+    @Autowired
+    private DistributedLockFactory distributedLockFactory;
+
+    public String sale()
+    {
+        String retMessage = "";
+        Lock redisLock = distributedLockFactory.getDistributedLock("redis");
+        redisLock.lock();
+        try
+        {
+            //1 查询库存信息
+            String result = stringRedisTemplate.opsForValue().get("inventory001");
+            //2 判断库存是否足够
+            Integer inventoryNumber = result == null ? 0 : Integer.parseInt(result);
+            //3 扣减库存
+            if(inventoryNumber > 0) {
+                stringRedisTemplate.opsForValue().set("inventory001",String.valueOf(--inventoryNumber));
+                retMessage = "成功卖出一个商品，库存剩余: "+inventoryNumber;
+                System.out.println(retMessage);
+                //暂停几秒钟线程,为了测试自动续期
+                try { TimeUnit.SECONDS.sleep(120); } catch (InterruptedException e) { e.printStackTrace(); }
+            }else{
+                retMessage = "商品卖完了，o(╥﹏╥)o";
+            }
+        }catch (Exception e){
+            e.printStackTrace();
+        }finally {
+            redisLock.unlock();
+        }
+        return retMessage+"\t"+"服务端口号："+port;
+    }
+
+
+    private void testReEnter()
+    {
+        Lock redisLock = distributedLockFactory.getDistributedLock("redis");
+        redisLock.lock();
+        try
+        {
+            System.out.println("################测试可重入锁####################################");
+        }finally {
+            redisLock.unlock();
+        }
+    }
+}
+```
+
+### Redission
+
+**快速上手**
+
+```xml
+<dependency>
+    <groupId>org.redisson</groupId>
+    <artifactId>redisson</artifactId>
+    <version>3.13.4</version>
+</dependency>
+```
+
+```java
+@Configuration
+public class RedisConfig
+{
+    @Bean
+    public RedisTemplate<String, Object> redisTemplate(LettuceConnectionFactory lettuceConnectionFactory)
+    {
+        RedisTemplate<String,Object> redisTemplate = new RedisTemplate<>();
+        redisTemplate.setConnectionFactory(lettuceConnectionFactory);
+        //设置key序列化方式string
+        redisTemplate.setKeySerializer(new StringRedisSerializer());
+        //设置value的序列化方式json
+        redisTemplate.setValueSerializer(new GenericJackson2JsonRedisSerializer());
+
+        redisTemplate.setHashKeySerializer(new StringRedisSerializer());
+        redisTemplate.setHashValueSerializer(new GenericJackson2JsonRedisSerializer());
+
+        redisTemplate.afterPropertiesSet();
+
+        return redisTemplate;
+    }
+
+    //单Redis节点模式
+    @Bean
+    public Redisson redisson()
+    {
+        Config config = new Config();
+        config.useSingleServer().setAddress("redis://192.168.111.175:6379").setDatabase(0).setPassword("111111");
+        return (Redisson) Redisson.create(config);
+    }
+}
+```
+
+```java
+@RestController
+@Api(tags = "redis分布式锁测试")
+public class InventoryController
+{
+    @Autowired
+    private InventoryService inventoryService;
+
+    @ApiOperation("扣减库存，一次卖一个")
+    @GetMapping(value = "/inventory/sale")
+    public String sale()
+    {
+        return inventoryService.sale();
+    }
+
+    @ApiOperation("扣减库存saleByRedisson，一次卖一个")
+    @GetMapping(value = "/inventory/saleByRedisson")
+    public String saleByRedisson()
+    {
+        return inventoryService.saleByRedisson();
+    }
+}
+```
+
+```java
+@Service
+@Slf4j
+public class InventoryService
+{
+    @Autowired
+    private StringRedisTemplate stringRedisTemplate;
+    @Value("${server.port}")
+    private String port;
+    @Autowired
+    private DistributedLockFactory distributedLockFactory;
+
+    @Autowired
+    private Redisson redisson;
+    public String saleByRedisson()
+    {
+        String retMessage = "";
+        String key = "zzyyRedisLock";
+        RLock redissonLock = redisson.getLock(key);
+        redissonLock.lock();
+        try
+        {
+            //1 查询库存信息
+            String result = stringRedisTemplate.opsForValue().get("inventory001");
+            //2 判断库存是否足够
+            Integer inventoryNumber = result == null ? 0 : Integer.parseInt(result);
+            //3 扣减库存
+            if(inventoryNumber > 0) {
+                stringRedisTemplate.opsForValue().set("inventory001",String.valueOf(--inventoryNumber));
+                retMessage = "成功卖出一个商品，库存剩余: "+inventoryNumber;
+                System.out.println(retMessage);
+            }else{
+                retMessage = "商品卖完了，o(╥﹏╥)o";
+            }
+        }finally {
+            if(redissonLock.isLocked() && redissonLock.isHeldByCurrentThread())
+            {
+                redissonLock.unlock();
+            }
+        }
+        return retMessage+"\t"+"服务端口号："+port;
+    }
+}
+```
+

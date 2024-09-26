@@ -1295,43 +1295,43 @@ public void unlock() {
 
 - 修改业务代码
 ```java
-  @Override
-    public Result seckillVoucher(Long voucherId) {
-        // 1.查询优惠券
-        SeckillVoucher voucher = seckillVoucherService.getById(voucherId);
-        // 2.判断秒杀是否开始
-        if (voucher.getBeginTime().isAfter(LocalDateTime.now())) {
-            // 尚未开始
-            return Result.fail("秒杀尚未开始！");
-        }
-        // 3.判断秒杀是否已经结束
-        if (voucher.getEndTime().isBefore(LocalDateTime.now())) {
-            // 尚未开始
-            return Result.fail("秒杀已经结束！");
-        }
-        // 4.判断库存是否充足
-        if (voucher.getStock() < 1) {
-            // 库存不足
-            return Result.fail("库存不足！");
-        }
-        Long userId = UserHolder.getUser().getId();
-        //创建锁对象(新增代码)
-        SimpleRedisLock lock = new SimpleRedisLock("order:" + userId, stringRedisTemplate);
-        //获取锁对象
-        boolean isLock = lock.tryLock(1200);
-		//加锁失败
-        if (!isLock) {
-            return Result.fail("不允许重复下单");
-        }
-        try {
-            //获取代理对象(事务)
-            IVoucherOrderService proxy = (IVoucherOrderService) AopContext.currentProxy();
-            return proxy.createVoucherOrder(voucherId);
-        } finally {
-            //释放锁
-            lock.unlock();
-        }
+@Override
+public Result seckillVoucher(Long voucherId) {
+    // 1.查询优惠券
+    SeckillVoucher voucher = seckillVoucherService.getById(voucherId);
+    // 2.判断秒杀是否开始
+    if (voucher.getBeginTime().isAfter(LocalDateTime.now())) {
+        // 尚未开始
+        return Result.fail("秒杀尚未开始！");
     }
+    // 3.判断秒杀是否已经结束
+    if (voucher.getEndTime().isBefore(LocalDateTime.now())) {
+        // 尚未开始
+        return Result.fail("秒杀已经结束！");
+    }
+    // 4.判断库存是否充足
+    if (voucher.getStock() < 1) {
+        // 库存不足
+        return Result.fail("库存不足！");
+    }
+    Long userId = UserHolder.getUser().getId();
+    //创建锁对象(新增代码)
+    SimpleRedisLock lock = new SimpleRedisLock("order:" + userId, stringRedisTemplate);
+    //获取锁对象
+    boolean isLock = lock.tryLock(1200);
+    //加锁失败
+    if (!isLock) {
+        return Result.fail("不允许重复下单");
+    }
+    try {
+        //获取代理对象(事务)
+        IVoucherOrderService proxy = (IVoucherOrderService) AopContext.currentProxy();
+        return proxy.createVoucherOrder(voucherId);
+    } finally {
+        //释放锁
+        lock.unlock();
+    }
+}
 ```
 ### Redis分布式锁误删情况说明
 逻辑说明：
@@ -1385,8 +1385,9 @@ public void unlock() {
 线程1现在持有锁之后，在执行业务逻辑过程中，他正准备删除锁，而且已经走到了条件判断的过程中，比如他已经拿到了当前这把锁确实是属于他自己的，正准备删除锁，但是此时他的锁到期了，那么此时线程2进来，但是线程1他会接着往后执行，当他卡顿结束后，他直接就会执行删除锁那行代码，相当于条件判断并没有起到作用，这就是删锁时的原子性问题，之所以有这个问题，是因为线程1的拿锁，比锁，删锁，实际上并不是原子性的，我们要防止刚才的情况发生
 ![image.png](https://cdn.nlark.com/yuque/0/2023/png/32600948/1682816542007-c7cce9f0-aaaf-4aee-922c-8c5587e4557e.png#averageHue=%23f6f5f5&clientId=u9fd07684-81ff-4&from=paste&height=697&id=u5e3abf72&originHeight=697&originWidth=1611&originalType=binary&ratio=1&rotation=0&showTitle=false&size=249102&status=done&style=none&taskId=ue53f39ed-f2b1-4527-b760-dcee6e4d696&title=&width=1611)
 ### Lua脚本解决多条命令原子性问题
-Redis提供了Lua脚本功能，在一个脚本中编写多条Redis命令，确保多条命令执行时的原子性。Lua是一种编程语言，它的基本语法大家可以参考网站：[https://www.runoob.com/lua/lua-tutorial.html](https://www.runoob.com/lua/lua-tutorial.html)，这里重点介绍Redis提供的调用函数，我们可以使用lua去操作redis，又能保证他的原子性，这样就可以实现拿锁比锁删锁是一个原子性动作了，作为Java程序员这一块只需要知道他有什么作用即可。
+Redis提供了Lua脚本功能，在一个脚本中编写多条Redis命令，确保多条命令执行时的原子性。Lua是一种编程语言，基本语法可以参考：[https://www.runoob.com/lua/lua-tutorial.html](https://www.runoob.com/lua/lua-tutorial.html)，这里重点介绍Redis提供的调用函数，我们可以使用lua去操作redis，又能保证他的原子性，这样就可以实现拿锁比锁删锁是一个原子性动作了，作为Java程序员这一块只需要知道他有什么作用即可。
 这里重点介绍Redis提供的调用函数，语法如下：
+
 ```lua
 redis.call('命令名称', 'key', '其它参数', ...)
 ```
