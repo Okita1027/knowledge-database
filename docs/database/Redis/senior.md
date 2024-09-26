@@ -675,7 +675,7 @@ flowchart LR
 - 不乱抢：自己的锁只能自己释放，A线程不能 unlock B线程的锁
 - 重入性：同一个节点的同一个线程获得锁之后，能够再次获取这个锁
 
-**代码实现**
+**自定义实现**
 
 ```JAVA
 @Component
@@ -873,6 +873,47 @@ public class InventoryService
 }
 ```
 
+### 红锁
+
+**产生背景**
+
+```mermaid
+flowchart LR
+!ERROR! -->|3:突然master宕机| Master
+客户端A -->|1:set分布式锁并成功获得锁| Master
+Master -->|2:异步机制把锁同步| Slave
+Slave -->|4:主从切换后从机升级为主机| Master
+客户端B -->|5:客户获得锁成功| Slave
+```
+
+1. 客户A通过Redis的set命令成功建立分布式锁并持有锁
+2. 正常情况下主从机都有分布式锁
+3. 突然出现故障，但Master还没来得及同步数据给Slave，此时Slave机器上没有对应的锁信息
+4. 从机Slave上位，变成新的Master主机
+5. 客户B建锁成功，此时出现了：两个线程获取到了锁，可能会导致各种意外情况发生，例如脏读
+
+> CAP定理的CP遭到了破坏，并且Redis无论单机、主从、哨兵均有此风险
+
+Redlock算法，用来实现**基于多个实例的**分布式锁。
+
+锁变量由多个实例维护，即使有实例发生了故障，锁变量仍然是存在的，客户端还是可以完成锁操作。
+
+该方案基于（set 加锁、Lua 脚本解锁）进行改良，大致方案如下：
+
+假设我们有N个Redis主节点，例如 N = 5，这些节点是完全独立的，不使用复制或任何其他隐式协调系统，为了取到锁，客户端执行以下操作：
+
+1. 获取当前时间，以毫秒为单位
+2. 依次尝试从5个实例，使用相同的 key 和随机值（例如 UUID）获取锁。当向Redis 请求获取锁时，客户端应该设置一个超时时间，这个超时时间应该小于锁的失效时间。例如你的锁自动失效时间为 10 秒，则超时时间应该在 5-50 毫秒之间。这样可以防止客户端在试图与一个宕机的 Redis 节点对话时长时间处于阻塞状态。如果一个实例不可用，客户端应该尽快尝试去另外一个 Redis 实例请求获取锁；
+3. 客户端通过当前时间减去步骤 1 记录的时间来计算获取锁使用的时间。当且仅当从大多数（N/2+1，这里是 3 个节点）的 Redis 节点都取到锁，并且获取锁使用的时间小于锁失效时间时，锁才算获取成功；
+4. 如果取到了锁，其真正有效时间等于初始有效时间减去获取锁所使用的时间（步骤 3 计算的结果）。
+5. 如果由于某些原因未能获得锁（无法在至少 N/2 + 1 个 Redis 实例获取锁、或获取锁的时间超过了有效时间），客户端应该在所有的 Redis 实例上进行解锁（即便某些Redis实例根本就没有加锁成功，防止某些节点获取到锁但是客户端没有得到响应而导致接下来的一段时间不能被重新获取锁）。
+
+> 该方案为了解决数据不一致的问题，直接舍弃了异步复制只使用 master 节点，同时由于舍弃了slave，为了保证可用性，引入了N个节点，官方建议是 5
+
+**watch_dog自动延期机制**
+
+客户端A加锁成功，就会启动一个watch dog看门狗，他是一个后台线程，会每隔10秒检查一下，如果客户端A还持有锁key，那么就会不断的延长锁key的生存时间，默认每次续命又从30秒新开始
+
 ### Redission
 
 **快速上手**
@@ -987,21 +1028,205 @@ public class InventoryService
 }
 ```
 
-**产生背景**
+**多机案例**
 
-```mermaid
-flowchart LR
-!ERROR! -->|3:突然master宕机| Master
-客户端A -->|1:set分布式锁并成功获得锁| Master
-Master -->|2:异步机制把锁同步| Slave
-Slave -->|4:主从切换后从机升级为主机| Master
-客户端B -->|5:客户获得锁成功| Slave
+```properties
+spring.redis.database=0
+spring.redis.password=
+spring.redis.timeout=3000
+spring.redis.mode=single
+
+spring.redis.pool.conn-timeout=3000
+spring.redis.pool.so-timeout=3000
+spring.redis.pool.size=10
+
+spring.redis.single.address1=192.168.111.185:6381
+spring.redis.single.address2=192.168.111.185:6382
+spring.redis.single.address3=192.168.111.185:6383
 ```
 
-1. 客户A通过Redis的set命令成功建立分布式锁并持有锁
-2. 正常情况下主从机都有分布式锁
-3. 突然出现故障，但Master还没来得及同步数据给Slave，此时Slave机器上没有对应的锁信息
-4. 从机Slave上位，变成新的Master主机
-5. 客户B建锁成功，此时出现了：两个线程获取到了锁，可能会导致各种意外情况发生，例如脏读
+```java
+@Configuration
+@EnableConfigurationProperties(RedisProperties.class)
+public class CacheConfiguration {
 
-> CAP定理的CP遭到了破坏，并且Redis无论单机、主从、哨兵均有此风险
+    @Autowired
+    RedisProperties redisProperties;
+
+    @Bean
+    RedissonClient redissonClient1() {
+        Config config = new Config();
+        String node = redisProperties.getSingle().getAddress1();
+        node = node.startsWith("redis://") ? node : "redis://" + node;
+        SingleServerConfig serverConfig = config.useSingleServer()
+                .setAddress(node)
+                .setTimeout(redisProperties.getPool().getConnTimeout())
+                .setConnectionPoolSize(redisProperties.getPool().getSize())
+                .setConnectionMinimumIdleSize(redisProperties.getPool().getMinIdle());
+        if (StringUtils.isNotBlank(redisProperties.getPassword())) {
+            serverConfig.setPassword(redisProperties.getPassword());
+        }
+        return Redisson.create(config);
+    }
+
+    @Bean
+    RedissonClient redissonClient2() {
+        Config config = new Config();
+        String node = redisProperties.getSingle().getAddress2();
+        node = node.startsWith("redis://") ? node : "redis://" + node;
+        SingleServerConfig serverConfig = config.useSingleServer()
+                .setAddress(node)
+                .setTimeout(redisProperties.getPool().getConnTimeout())
+                .setConnectionPoolSize(redisProperties.getPool().getSize())
+                .setConnectionMinimumIdleSize(redisProperties.getPool().getMinIdle());
+        if (StringUtils.isNotBlank(redisProperties.getPassword())) {
+            serverConfig.setPassword(redisProperties.getPassword());
+        }
+        return Redisson.create(config);
+    }
+
+    @Bean
+    RedissonClient redissonClient3() {
+        Config config = new Config();
+        String node = redisProperties.getSingle().getAddress3();
+        node = node.startsWith("redis://") ? node : "redis://" + node;
+        SingleServerConfig serverConfig = config.useSingleServer()
+                .setAddress(node)
+                .setTimeout(redisProperties.getPool().getConnTimeout())
+                .setConnectionPoolSize(redisProperties.getPool().getSize())
+                .setConnectionMinimumIdleSize(redisProperties.getPool().getMinIdle());
+        if (StringUtils.isNotBlank(redisProperties.getPassword())) {
+            serverConfig.setPassword(redisProperties.getPassword());
+        }
+        return Redisson.create(config);
+    }
+
+
+    /**
+     * 单机
+     */
+    /*@Bean
+    public Redisson redisson()
+    {
+        Config config = new Config();
+
+        config.useSingleServer().setAddress("redis://192.168.111.147:6379").setDatabase(0);
+
+        return (Redisson) Redisson.create(config);
+    }*/
+
+}
+```
+
+```java
+@Data
+public class RedisPoolProperties {
+
+    private int maxIdle;
+
+    private int minIdle;
+
+    private int maxActive;
+
+    private int maxWait;
+
+    private int connTimeout;
+
+    private int soTimeout;
+
+    /**
+     * 池大小
+     */
+    private  int size;
+
+}
+```
+
+```java
+@ConfigurationProperties(prefix = "spring.redis", ignoreUnknownFields = false)
+@Data
+public class RedisProperties {
+
+    private int database;
+
+    /**
+     * 等待节点回复命令的时间。该时间从命令发送成功时开始计时
+     */
+    private int timeout;
+
+    private String password;
+
+    private String mode;
+
+    /**
+     * 池配置
+     */
+    private RedisPoolProperties pool;
+
+    /**
+     * 单机信息配置
+     */
+    private RedisSingleProperties single;
+}
+```
+
+```java
+@Data
+public class RedisSingleProperties {
+    private  String address1;
+    private  String address2;
+    private  String address3;
+}
+```
+
+```java
+@RestController
+@Slf4j
+public class RedLockController {
+
+    public static final String CACHE_KEY_REDLOCK = "ATGUIGU_REDLOCK";
+
+    @Autowired
+    RedissonClient redissonClient1;
+
+    @Autowired
+    RedissonClient redissonClient2;
+
+    @Autowired
+    RedissonClient redissonClient3;
+
+    boolean isLockBoolean;
+
+    @GetMapping(value = "/multiLock")
+    public String getMultiLock() throws InterruptedException
+    {
+        String uuid =  IdUtil.simpleUUID();
+        String uuidValue = uuid+":"+Thread.currentThread().getId();
+
+        RLock lock1 = redissonClient1.getLock(CACHE_KEY_REDLOCK);
+        RLock lock2 = redissonClient2.getLock(CACHE_KEY_REDLOCK);
+        RLock lock3 = redissonClient3.getLock(CACHE_KEY_REDLOCK);
+
+        RedissonMultiLock redLock = new RedissonMultiLock(lock1, lock2, lock3);
+        redLock.lock();
+        try
+        {
+            System.out.println(uuidValue+"\t"+"---come in biz multiLock");
+            try { TimeUnit.SECONDS.sleep(30); } catch (InterruptedException e) { e.printStackTrace(); }
+            System.out.println(uuidValue+"\t"+"---task is over multiLock");
+        } catch (Exception e) {
+            e.printStackTrace();
+            log.error("multiLock exception ",e);
+        } finally {
+            redLock.unlock();
+            log.info("释放分布式锁成功key:{}", CACHE_KEY_REDLOCK);
+        }
+
+        return "multiLock task is over  "+uuidValue;
+    }
+
+}
+```
+
+## 缓存过期淘汰策略
+
