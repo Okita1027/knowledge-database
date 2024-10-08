@@ -254,6 +254,158 @@ Redis的Key虽然可以自定义，但最好遵循下面的几个最佳实践约
 - 方便管理
 - 更节省内存： key是string类型，底层编码包含int、embstr和raw三种。embstr在小于44字节使用，采用连续内存空间，内存占用更小。当字节数大于44字节时，会转为raw模式存储，在raw模式下，内存空间不是连续的，而是采用一个指针指向了另外一段内存空间，在这段空间里存储SDS内容，这样空间不连续，访问的时候性能也就会收到影响，还有可能产生内存碎片
 
+## 批处理优化
+
+### 客户端与Redis的交互流程
+
+![单个命令的执行流程](https://gcore.jsdelivr.net/gh/Okita1027/knowledge-database-images@main/database/redis/senior01.png)
+
+![image-20241008140800562](https://gcore.jsdelivr.net/gh/Okita1027/knowledge-database-images@main/database/redis/senior02.png)
+
+Redis处理指令是很快的，主要花费的时候在于网络传输。于是乎很容易想到将多条指令批量的传输给redis
+
+![image-20241008140829617](https://gcore.jsdelivr.net/gh/Okita1027/knowledge-database-images@main/database/redis/senior03.png)
+
+
+
+### MSet
+
+Redis提供了很多Mxxx这样的命令，可以实现批量插入数据，例如：
+
+- mset
+- hmset
+
+利用mset批量插入10万条数据
+
+```java
+@Test
+void testMxx() {
+    String[] arr = new String[2000];
+    int j;
+    long b = System.currentTimeMillis();
+    for (int i = 1; i <= 100000; i++) {
+        j = (i % 1000) << 1;
+        arr[j] = "test:key_" + i;
+        arr[j + 1] = "value_" + i;
+        if (j == 0) {
+            jedis.mset(arr);
+        }
+    }
+    long e = System.currentTimeMillis();
+    System.out.println("time: " + (e - b));
+}
+```
+
+### Pipeline
+
+MSET虽然可以批处理，但是却只能操作部分数据类型，因此如果有对复杂数据类型的批处理需要，建议使用Pipeline
+
+```java
+@Test
+void testPipeline() {
+    // 创建管道
+    Pipeline pipeline = jedis.pipelined();
+    long b = System.currentTimeMillis();
+    for (int i = 1; i <= 100000; i++) {
+        // 放入命令到管道
+        pipeline.set("test:key_" + i, "value_" + i);
+        if (i % 1000 == 0) {
+            // 每放入1000条命令，批量执行
+            pipeline.sync();
+        }
+    }
+    long e = System.currentTimeMillis();
+    System.out.println("time: " + (e - b));
+}
+```
+
+### 集群下的批处理
+
+如MSET或Pipeline这样的批处理需要在一次请求中携带多条命令，而此时如果Redis是一个集群，那批处理命令的多个key必须落在一个插槽中，否则就会导致执行失败。大家可以想一想这样的要求其实很难实现，因为我们在批处理时，可能一次要插入很多条数据，这些数据很有可能不会都落在相同的节点上，这就会导致报错了
+
+有4种解决方案
+
+![image-20241008141331384](https://gcore.jsdelivr.net/gh/Okita1027/knowledge-database-images@main/database/redis/senior04.png)
+
+- 第一种方案：串行执行，所以这种方式没有什么意义，当然，执行起来就很简单了，缺点就是耗时过久。
+
+- 第二种方案：串行slot，简单来说，就是执行前，客户端先计算一下对应的key的slot，一样slot的key就放到一个组里边，不同的，就放到不同的组里边，然后对每个组执行pipeline的批处理，他就能串行执行各个组的命令，这种做法比第一种方法耗时要少，但是缺点呢，相对来说复杂一点，所以这种方案还需要优化一下
+
+- 第三种方案：并行slot，相较于第二种方案，在分组完成后串行执行，第三种方案，就变成了并行执行各个命令，所以他的耗时就非常短，但是实现呢，也更加复杂。
+
+- 第四种：hash_tag，redis计算key的slot的时候，其实是根据key的有效部分来计算的，通过这种方式就能一次处理所有的key，这种方式耗时最短，实现也简单，但是如果通过操作key的有效部分，那么就会导致所有的key都落在一个节点上，产生数据倾斜的问题，所以**推荐使用第三种方式**。
+
+## 慢查询优化
+
+**定义：**在Redis执行时耗时超过某个阈值的命令，称为慢查询。
+
+**危害：**由于Redis是单线程的，所以当客户端发出指令后，他们都会进入到redis底层的queue来执行，如果此时有一些慢查询的数据，就会导致大量请求阻塞，从而引起报错，所以我们需要解决慢查询问题。
+
+慢查询的阈值可以通过配置指定：
+
+- slowlog-log-slower-than：慢查询阈值，单位是微秒。默认是10000，建议1000。
+
+慢查询会被放入慢查询日志中，日志的长度有上限，可以通过配置指定：
+
+- slowlog-max-len：慢查询日志（本质是一个队列）的长度。默认是128，建议1000。
+
+修改这两个配置可以使用 `config set`命令。
+
+**查看慢查询**
+
+- `slowlog len`：查询慢查询日志长度
+- `slowlog get [n]`：读取n条慢查询日志
+- `slowlog reset`：清空慢查询列表
+
+![image-20241008145523779](https://gcore.jsdelivr.net/gh/Okita1027/knowledge-database-images@main/database/redis/senior05.png)
+
+## 内存划分、配置
+
+当Redis内存不足时，可能导致Key频繁被删除、响应时间变长、QPS不稳定等问题。当内存使用率达到90%以上时就需要我们警惕，并快速定位到内存占用的原因。
+
+**碎片问题分析**
+
+Redis底层分配并不是这个key有多大，他就会分配多大，而是有他自己的分配策略，比如8,16,20等等，假定当前key只需要10个字节，此时分配8肯定不够，那么他就会分配16个字节，多出来的6个字节就不能被使用，这就是我们常说的 碎片问题
+
+**进程内存问题分析**
+
+这片内存，通常都可以忽略不计
+
+**缓冲区内存问题分析**
+
+一般包括客户端缓冲区、AOF缓冲区、复制缓冲区等。客户端缓冲区又包括输入缓冲区和输出缓冲区两种。这部分内存占用波动较大，所以这片内存也是我们需要重点分析的内存问题。
+
+| **内存占用** |                           **说明**                           |
+| :----------: | :----------------------------------------------------------: |
+|   数据内存   | 是Redis最主要的部分，存储Redis的键值信息。主要问题是BigKey问题、内存碎片问题 |
+|   进程内存   | Redis主进程本身运⾏肯定需要占⽤内存，如代码、常量池等等；这部分内存⼤约⼏兆，在⼤多数⽣产环境中与Redis数据占⽤的内存相⽐可以忽略。 |
+|  缓冲区内存  | 一般包括客户端缓冲区、AOF缓冲区、复制缓冲区等。客户端缓冲区又包括输入缓冲区和输出缓冲区两种。这部分内存占用波动较大，不当使用BigKey，可能导致内存溢出。 |
+
+于是我们就需要通过一些命令，可以查看到Redis目前的内存分配状态：
+
+* `info memory`：查看内存分配的情况
+* `memory xxx`：查看key的主要占用情况
+
+看到了这些配置，最关键的缓存区内存如何定位和解决呢？
+
+内存缓冲区常见的有三种：
+
+* 复制缓冲区：主从复制的repl_backlog_buf，如果太小可能导致频繁的全量复制，影响性能。通过replbacklog-size来设置，默认1MB
+* AOF缓冲区：AOF刷盘之前的缓存区域，AOF执行rewrite的缓冲区。无法设置容量上限
+* 客户端缓冲区：分为输入缓冲区和输出缓冲区，输入缓冲区最大1G且不能设置。输出缓冲区可以设置
+
+复制缓冲区和AOF缓冲区不会有问题，最关键就是客户端缓冲区的问题
+
+客户端缓冲区：指的就是我们发送命令时，客户端用来缓存命令的一个缓冲区，也就是我们向redis输入数据的输入端缓冲区和redis向客户端返回数据的响应缓存区，输入缓冲区最大1G且不能设置，所以这一块根本不用担心，如果超过了这个空间，redis会直接断开，因为本来此时此刻就代表着redis处理不过来了，我们需要担心的就是输出端缓冲区
+
+![image-20241008162702056](https://gcore.jsdelivr.net/gh/Okita1027/knowledge-database-images@main/database/redis/senior06.png)
+
+在使用redis过程中，处理大量的big value，会导致输出结果过多，如果输出缓存区过大，会导致redis直接断开，而默认配置的情况下是没有大小的，内存可能一下子被占满，会直接导致redis断开，解决方案有两个
+
+1、设置一个大小
+
+2、增加我们带宽的大小，避免我们出现大量数据从而直接超过了redis的承受能力
+
 ## 多级缓存
 
 传统的缓存策略一般是请求到达Tomcat后，先查询Redis，如果未命中则查询数据库
