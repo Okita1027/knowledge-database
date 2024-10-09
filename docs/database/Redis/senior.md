@@ -1669,3 +1669,10 @@ redis默认每隔100ms检查是否有过期的key，有过期key则删除。注�
 
 - 避免存储BigKey
 - 开启惰性删除：`lazyfree-lazy-eviction=yes`
+
+## 底层数据结构
+
+### 动态字符串SDS
+
+
+
