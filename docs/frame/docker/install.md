@@ -6,10 +6,74 @@ date: 2024-06-16 22:11:18
 categories: [Docker]
 tags: []
 ---
-# 安装Docker
-Docker 分为 CE 和 EE 两大版本。CE 即社区版（免费，支持周期 7 个月），EE 即企业版，强调安全，付费使用，支持周期 24 个月。
-Docker CE 分为 `stable` `test` 和 `nightly` 三个更新频道。
-官方网站上有各种环境下的 [安装指南](https://docs.docker.com/install/)，这里主要介绍 Docker CE 在 CentOS上的安装。
+## Ubuntu安装Docker
+
+### 卸载旧版本：
+
+```shell
+$ for pkg in docker \
+           docker-engine \
+           docker.io \
+           docker-doc \
+           docker-compose \
+           podman-docker \
+           containerd \
+           runc;
+do
+    sudo apt remove $pkg;
+done
+```
+
+### APT安装
+
+由于 `apt` 源使用 HTTPS 以确保软件下载过程中不被篡改。因此，我们首先需要添加使用 HTTPS 传输的软件包以及 CA 证书。
+
+```shell
+sudo apt update
+sudo apt upgrade
+
+sudo apt install \
+    apt-transport-https \
+    ca-certificates \
+    curl \
+    gnupg \
+    lsb-release
+```
+
+为了确认所下载软件包的合法性，需要添加软件源的 `GPG` 密钥。
+
+```shell
+curl -fsSL https://mirrors.aliyun.com/docker-ce/linux/ubuntu/gpg | sudo gpg --dearmor -o /usr/share/keyrings/docker-archive-keyring.gpg
+```
+
+```shell
+# 官方源较慢，推荐使用上面的国内镜像源
+# curl -fsSL https://download.docker.com/linux/ubuntu/gpg | sudo gpg --dearmor -o /usr/share/keyrings/docker-archive-keyring.gpg
+```
+
+更新APT软件包缓存，并安装docker-ce
+
+```shell
+sudo apt update
+
+sudo apt install docker-ce docker-ce-cli containerd.io
+```
+
+## 脚本安装
+
+在测试或开发环境中 Docker 官方为了简化安装流程，提供了一套便捷的安装脚本，Ubuntu 系统上可以使用这套脚本安装，另外可以通过 `--mirror` 选项使用国内源进行安装：
+
+```shell
+# curl -fsSL test.docker.com -o get-docker.sh
+curl -fsSL get.docker.com -o get-docker.sh
+sudo sh get-docker.sh --mirror Aliyun
+# sudo sh get-docker.sh --mirror AzureChinaCloud
+```
+
+执行这个命令后，脚本就会自动的将一切准备工作做好，并且把 Docker 的稳定(stable)版本安装在系统中。
+
+
+
 # CentOS安装Docker
 Docker CE 支持 64 位版本 CentOS 7，并且要求内核版本不低于 3.10， CentOS 7 满足最低内核的要求，所以我们在CentOS 7安装Docker。
 ## 卸载（可选）
@@ -74,6 +138,7 @@ docker -v
 ## 配置镜像加速
 docker官方镜像仓库网速较差，我们需要设置国内镜像服务：
 参考阿里云的镜像加速文档：[https://cr.console.aliyun.com/cn-hangzhou/instances/mirrors](https://cr.console.aliyun.com/cn-hangzhou/instances/mirrors)
+
 # CentOS7安装DockerCompose
 ## 下载
 Linux下需要通过命令下载：
