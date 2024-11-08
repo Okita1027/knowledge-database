@@ -426,6 +426,425 @@ docker build \
 
 ## Docker Compose
 
+### 指定项目名称
+
+项目名称必须仅包含小写字母、十进制数字、短划线和 下划线，并且必须以小写字母或十进制数字开头。如果 项目目录或当前目录的 base name 违反此 constraint 的 Constraint 中，可以使用替代机制。
+
+**命令行指定**
+
+在运行 `docker-compose` 命令时，使用 `-p` 选项指定项目名称：
+
+```bash
+docker-compose -p myproject up
+```
+
+这样，所有的容器、网络和卷都将以 `myproject` 作为前缀。例如，`web` 服务的容器名称可能会变为 `myproject_web_1`。
+
+**通过环境变量指定**
+
+使用 `COMPOSE_PROJECT_NAME` 环境变量指定项目名称。这在需要频繁运行同一项目时尤其有用。
+
+1. 将 `COMPOSE_PROJECT_NAME` 变量添加到 `.env` 文件中：
+
+   ```env
+   COMPOSE_PROJECT_NAME=myproject
+   ```
+
+2. 当 `docker-compose` 读取到 `.env` 文件中的 `COMPOSE_PROJECT_NAME` 变量时，会自动使用该名称作为项目名称。
+
+**直接在命令行设置环境变量**
+
+在运行命令的同时设置环境变量 `COMPOSE_PROJECT_NAME`，这样无需修改 `.env` 文件：
+
+```bash
+COMPOSE_PROJECT_NAME=myproject docker-compose up
+```
+
+假设有一个 `docker-compose.yml` 文件如下：
+
+```yml
+version: '3.8'
+services:
+  web:
+    image: nginx
+  db:
+    image: postgres
+```
+
+通过以下命令启动服务并指定项目名称：
+
+```bash
+docker-compose -p customproject up
+```
+
+生成的容器名称将包含前缀 `customproject`，如 `customproject_web_1` 和 `customproject_db_1`。
+
+---
+
+每种方法的优先级（从最高到最低）如下：
+
+1. 命令行标志。`-p`
+2. [COMPOSE_PROJECT_NAME 环境变量](https://docs.docker.com/compose/how-tos/environment-variables/envvars/)。
+3. 这[顶级属性`name:`](https://docs.docker.com/reference/compose-file/version-and-name/)在 Compose 文件中。或者，如果您在命令行中使用标志[指定多个 Compose 文件](https://docs.docker.com/compose/how-tos/multiple-compose-files/merge/)，则为最后一个。`name:-f`
+4. 包含 Compose 文件的项目目录的基本名称。或者，如果您在命令行中使用标志[指定多个 Compose 文件](https://docs.docker.com/compose/how-tos/multiple-compose-files/merge/)，则为第一个 Compose 文件的基名称。`-f`
+5. 如果未指定 Compose 文件，则为当前目录的基本名称。
+
+### 生命周期钩子
+
+当 Docker Compose 运行容器时，它使用两个元素：[ENTRYPOINT 和 COMMAND](https://github.com/manuals//engine/containers/run.md#default-command-and-options), 来管理容器启动和停止时发生的情况。
+
+但是，有时使用生命周期钩子单独处理这些任务会更容易 - 在容器启动后或停止之前运行的命令。
+
+生命周期钩子特别有用，因为它们可以具有特殊权限 （例如以 root 用户身份运行），即使容器本身以较低的权限运行 为了安全。这意味着某些需要更高权限的任务可以在没有 损害容器的整体安全性。
+
+#### 后启动钩子
+
+Post-start 钩子是在容器启动后运行的命令，但没有 设置执行时间。在 执行容器的 .`entrypoint`
+
+在提供的示例中：
+
+- 该钩子用于将卷的所有权更改为非 root 用户（因为卷 默认使用 root 所有权创建）。
+- 容器启动后，该命令将目录的所有权更改为 user 。`chown` `/data` `1001`
+
+```yml
+services:
+  app:
+    image: backend
+    user: 1001
+    volumes:
+      - data:/data    
+    post_start:
+      - command: chown -R /data 1001:1001
+        user: root
+
+volumes:
+  data: {} # a Docker volume is created with root ownership
+```
+
+#### 预停止钩子
+
+预停止钩子是在容器被特定 命令（如或使用 手动停止它）。 如果容器自行停止或突然被杀死，这些钩子将不会运行。`docker compose down` `Ctrl+C`
+
+在以下示例中，在容器停止之前，脚本为 run 执行任何必要的清理。`./data_flush.sh`
+
+```yml
+services:
+  app:
+    image: backend
+    pre_stop:
+      - command: ./data_flush.sh
+```
+
+### profiles配置集
+
+用于定义和选择不同的配置文件（或称“配置集”）。通过 `profiles` 可以控制哪些服务在特定环境中运行（例如开发、测试或生产环境），从而更加灵活地管理不同环境的需求。
+
+#### 配置profiles
+
+服务可以指定一个或多个 `profiles`。只有在运行时启用的配置文件中的服务才会启动。
+
+```yml
+version: '3.9'
+
+services:
+  web:
+    image: nginx:latest
+    profiles:
+      - production
+      - staging
+
+  db:
+    image: postgres:latest
+    profiles:
+      - production
+
+  redis:
+    image: redis:latest
+    profiles:
+      - development
+
+  debug:
+    image: busybox
+    command: sleep infinity
+    profiles:
+      - development
+```
+
+在上面的配置中：
+
+- **`web`** 和 **`db`** 服务在 `production` 配置下可用。
+- **`redis`** 和 **`debug`** 服务仅在 `development` 配置下可用。
+
+#### 启用/停止profiles
+
+要运行指定 `profiles` 下的服务，可以使用 `COMPOSE_PROFILES` 环境变量或 `--profile` 选项。
+
+**使用`COMPOSE_PROFILES`环境变量**
+
+```bash
+COMPOSE_PROFILES=production docker-compose up
+COMPOSE_PROFILES=production docker-compose down
+```
+
+上述命令将启动/停止 `production` 配置文件中的服务，即 `web` 和 `db` 服务。
+
+**使用`--profile`选项**
+
+在`docker-compose`命名中直接指定`–profile`
+
+```bash
+docker-compose --profile development up
+docker-compose --profile development down
+```
+
+这将只启动/停止 `development` 配置文件中的服务，即 `redis` 和 `debug` 服务。
+
+**启动多个配置文件**
+
+可以同时启用多个配置文件：
+
+方法1：
+
+```bash
+COMPOSE_PROFILES=production,development docker-compose up
+```
+
+方法2：
+
+```bash
+docker-compose --profile production --profile development up
+```
+
+这样将启动 `production` 和 `development` 配置文件中的所有服务，即 `web`、`db`、`redis` 和 `debug` 服务。
+
+### 控制启动顺序
+
+在 Docker Compose 中，有时需要控制服务的启动顺序，确保某些服务（如数据库）在依赖它们的服务（如应用程序）之前启动。虽然 Docker Compose 本身不支持严格的启动顺序控制，但可以通过以下方法来实现基本的启动顺序控制：
+
+#### `depends_on`
+
+`depends_on` 是 Docker Compose 提供的一个指令，用于指定一个服务的依赖关系，使 Docker Compose 按照指定的顺序启动服务。但注意，`depends_on` 仅在容器启动顺序上有效，并不保证依赖服务的完全就绪状态（如数据库服务实际可用）。因此，在有较严格启动顺序要求的场景下，通常需要搭配健康检查。
+
+```yml
+version: '3.8'
+
+services:
+  db:
+    image: postgres:latest
+    environment:
+      POSTGRES_USER: user
+      POSTGRES_PASSWORD: password
+
+  web:
+    image: my_web_app_image
+    depends_on:
+      - db
+```
+
+在这个例子中，`web` 服务会在 `db` 服务之后启动。但需要注意，`depends_on` 并不意味着 `db` 服务已经完全准备好，它只是确保容器的启动顺序。
+
+#### 配合`healthcheck`确保服务就绪
+
+为了确保依赖服务完全可用，可以使用 `healthcheck` 指令定义健康检查。健康检查会定期检查服务是否完全启动并准备就绪，这样可以避免应用在数据库等服务未就绪时启动。
+
+```yml
+version: '3.8'
+
+services:
+  db:
+    image: postgres:latest
+    environment:
+      POSTGRES_USER: user
+      POSTGRES_PASSWORD: password
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U user"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  web:
+    image: my_web_app_image
+    depends_on:
+      db:
+        condition: service_healthy
+```
+
+在这个示例中，`db` 服务设置了健康检查，`web` 服务的 `depends_on` 条件设置为 `service_healthy`。这确保了 `db` 服务在健康检查通过（即数据库服务完全可用）后，`web` 服务才会启动。
+
+> `healthcheck` 会根据容器的状态报告健康状况，`condition: service_healthy` 仅在 Docker Compose v3.4 及以上版本中支持。
+
+#### 脚本/延迟启动
+
+有些服务没有健康检查工具，或者需要更灵活的就绪条件。在这种情况下，可以通过启动延迟或脚本控制服务的启动顺序。例如，可以在 `command` 中设置延迟命令来确保依赖服务完全启动。
+
+```yml
+version: '3.8'
+
+services:
+  db:
+    image: postgres:latest
+    environment:
+      POSTGRES_USER: user
+      POSTGRES_PASSWORD: password
+
+  web:
+    image: my_web_app_image
+    depends_on:
+      - db
+    entrypoint: ["sh", "-c", "sleep 10 && your_web_app_command"]
+```
+
+在这个例子中，`web` 服务的 `entrypoint` 使用了 `sleep 10` 命令，等待 `db` 服务有足够的时间来完全启动。在实际使用中，可以根据需求调整 `sleep` 的时间长度。
+
+#### 配合`restart`策略自动重启
+
+对于较长时间准备就绪的服务，还可以结合 `restart` 策略确保服务启动后可以重试连接依赖的服务。这样，即使在初始启动时依赖服务还没完全就绪，容器也会自动重启并尝试连接，直至成功。
+
+```yml
+version: '3.8'
+
+services:
+  db:
+    image: postgres:latest
+    environment:
+      POSTGRES_USER: user
+      POSTGRES_PASSWORD: password
+
+  web:
+    image: my_web_app_image
+    depends_on:
+      - db
+    restart: on-failure
+```
+
+在这个配置中，`web` 服务会在初始启动失败时自动重启，确保数据库可用后能重新尝试启动。
+
+### 环境变量
+
+#### 设置环境变量
+
+**使用`environment`关键字**
+
+可以在 `docker-compose.yml` 文件中，直接通过 `environment` 关键字为服务设置环境变量。这种方法适合于写入明确的环境变量值，适用于少量变量的场景。
+
+```yml
+version: '3.8'
+
+services:
+  app:
+    image: my_app_image
+    environment:
+      - APP_ENV=production
+      - DEBUG=false
+      - DATABASE_HOST=db
+```
+
+在此例中，`app` 服务会启动时会使用 `APP_ENV`、`DEBUG` 和 `DATABASE_HOST` 作为环境变量。
+
+**使用`.env`文件**
+
+Docker Compose 支持在项目根目录下的 `.env` 文件中定义环境变量。这些变量会**自动**被 `docker-compose.yml` 文件识别，并可以在 Compose 文件中以 `${VAR_NAME}` 方式引用，便于变量集中管理。
+
+```env
+# .env 文件
+APP_ENV=production
+DEBUG=false
+DATABASE_HOST=db
+```
+
+```yaml
+version: '3.8'
+
+services:
+  app:
+    image: my_app_image
+    environment:
+      - APP_ENV=${APP_ENV}
+      - DEBUG=${DEBUG}
+      - DATABASE_HOST=${DATABASE_HOST}
+```
+
+在这种配置中，Docker Compose 会自动加载 `.env` 文件的内容，并在服务启动时将其注入到容器中。
+
+**使用`env_file`指定环境文件**
+
+除了 `.env` 文件，还可以使用 `env_file` 指定额外的环境文件，为每个服务单独加载特定环境文件。
+
+1. 创建一个 `app.env` 文件：
+
+```env
+# app.env 文件
+APP_ENV=production
+DEBUG=false
+DATABASE_HOST=db
+```
+
+2. 在 `docker-compose.yml` 文件中，通过 `env_file` 加载 `app.env` 文件：
+
+```yaml
+version: '3.8'
+
+services:
+  app:
+    image: my_app_image
+    env_file:
+      - app.env
+```
+
+此方法允许对不同服务加载不同的环境文件，在复杂项目中可以使用分离的环境文件来管理各服务配置。
+
+**使用Shell环境变量**
+
+在运行 `docker-compose` 命令时，当前 Shell 的环境变量也会被传递到 Docker Compose 中。这适合于临时指定变量或为敏感数据（如密码）提供动态输入。
+
+```bash
+export APP_ENV=production
+export DEBUG=false
+docker-compose up
+```
+
+Docker Compose 将自动识别 `APP_ENV` 和 `DEBUG` 环境变量，并在启动时应用这些值。
+
+**在Compose文件中设置默认值**
+
+可以在 Compose 文件中为环境变量指定默认值，避免在变量未定义的情况下导致错误。使用 `${VAR_NAME:-default_value}` 的格式指定默认值：
+
+```yaml
+version: '3.8'
+
+services:
+  app:
+    image: my_app_image
+    environment:
+      - APP_ENV=${APP_ENV:-production}
+      - DEBUG=${DEBUG:-false}
+      - DATABASE_HOST=${DATABASE_HOST:-localhost}
+```
+
+在上面的例子中，如果 `APP_ENV`、`DEBUG` 或 `DATABASE_HOST` 未在 `.env` 文件或 Shell 中定义，则会使用默认值 `production`、`false` 和 `localhost`。
+
+#### 环境变量优先级
+
+
+
+
+
+#### 预定义的环境变量
+
+
+
+#### 插值
+
+
+
+#### 最佳实践
+
+
+
+
+
+
+
 
 
 ## Portainter
