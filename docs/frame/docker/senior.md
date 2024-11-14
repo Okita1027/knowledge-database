@@ -485,8 +485,8 @@ docker-compose -p customproject up
 
 1. 命令行标志。`-p`
 2. [COMPOSE_PROJECT_NAME 环境变量](https://docs.docker.com/compose/how-tos/environment-variables/envvars/)。
-3. 这[顶级属性`name:`](https://docs.docker.com/reference/compose-file/version-and-name/)在 Compose 文件中。或者，如果您在命令行中使用标志[指定多个 Compose 文件](https://docs.docker.com/compose/how-tos/multiple-compose-files/merge/)，则为最后一个。`name:-f`
-4. 包含 Compose 文件的项目目录的基本名称。或者，如果您在命令行中使用标志[指定多个 Compose 文件](https://docs.docker.com/compose/how-tos/multiple-compose-files/merge/)，则为第一个 Compose 文件的基名称。`-f`
+3. Compose 文件中的[顶级属性`name:`](https://docs.docker.com/reference/compose-file/version-and-name/)。如果在命令行中使用`-f`标志[指定多个 Compose 文件](https://docs.docker.com/compose/how-tos/multiple-compose-files/merge/)，则为最后一个`name:`
+4. 包含 Compose 文件的项目目录的基本名称。或者，如果您在命令行中使用`-f`标志[指定多个 Compose 文件](https://docs.docker.com/compose/how-tos/multiple-compose-files/merge/)，则为第一个 Compose 文件的基名称。
 5. 如果未指定 Compose 文件，则为当前目录的基本名称。
 
 ### 生命周期钩子
@@ -598,6 +598,12 @@ docker-compose --profile development down
 ```
 
 这将只启动/停止 `development` 配置文件中的服务，即 `redis` 和 `debug` 服务。
+
+**在配置文件中设置**
+
+```env
+COMPOSE_PROFILES=development
+```
 
 **启动多个配置文件**
 
@@ -825,21 +831,246 @@ services:
 
 #### 环境变量优先级
 
+不同来源的环境变量有优先级顺序，影响最终容器接收到的变量值。以下是 Docker Compose 中环境变量的优先级（从高到低）：
 
+1. Docker CLI 命令行中传递的变量
 
+   - 在运行 `docker-compose` 命令时，可以直接在命令前传递环境变量。例如：
 
+   - ```bash
+     APP_ENV=production DEBUG=true docker-compose up
+     ```
+
+2. Shell 环境变量
+
+   - 在运行 `docker-compose` 命令之前，也可以使用 `export` 命令来设置 Shell 环境变量：
+
+   - ```bash
+     export APP_ENV=production
+     docker-compose up
+     ```
+
+3. Compose 文件中的 `environment` 指定的变量
+
+   - 可以在 `docker-compose.yml` 文件中使用 `environment` 指定环境变量：
+
+   - ```yaml
+     version: '3.8'
+     
+     services:
+       app:
+         image: my_app_image
+         environment:
+           - APP_ENV=development
+     ```
+
+4. `.env` 文件中定义的变量
+
+   - 在 Compose 文件所在的目录下定义的 `.env` 文件中的变量会自动被加载并可用于 Compose 文件中引用。例如：
+
+   - ```env
+     # .env 文件
+     APP_ENV=staging
+     DEBUG=false
+     ```
+
+5. `env_file` 中的变量
+
+   - 可以在 Compose 文件中指定一个或多个 `env_file` 文件，为每个服务加载特定的环境文件：
+
+   - ```yaml
+     version: '3.8'
+     
+     services:
+       app:
+         image: my_app_image
+         env_file:
+           - app.env
+     ```
+
+6. 在 Compose 文件中指定的默认值
+
+   - 在 Compose 文件中使用 `${VAR_NAME:-default_value}` 的格式，可以为未定义的变量提供默认值：
+
+   - ```yaml
+     version: '3.8'
+     
+     services:
+       app:
+         image: my_app_image
+         environment:
+           - APP_ENV=${APP_ENV:-production}
+           - DEBUG=${DEBUG:-false}
+     ```
 
 #### 预定义的环境变量
 
+官方文档：[Pre-defined environment variables | Docker Docs](https://docs.docker.com/compose/how-tos/environment-variables/envvars/)
 
+##### `COMPOSE_PROJECT_NAME`
+
+当使用 `COMPOSE_PROJECT_NAME` 设置项目名称后，Docker Compose 会将该名称作为前缀附加在所有相关资源（如容器、网络、卷）上。例如，服务 `web` 会被命名为 `<项目名称>_web`，网络 `default` 会被命名为 `<项目名称>_default`。
+
+`COMPOSE_FILE`
+
+指定 Compose 文件的路径。支持指定多个 Compose 文件。
+
+- 默认行为：如果未提供，则 Compose 会查找当前目录中名为`compose.yaml`或`docker-compose.yaml`的文件，如果未找到，则 Compose 会递归搜索每个父目录，直到找到具有该名称的文件。
+- 默认分隔符：指定多个 Compose 文件时，默认情况下，路径分隔符处于打开状态：
+  - Mac 和 Linux：`:`（冒号）
+  - Windows：`;`（分号）
+
+路径分隔符也可以使用自定义的`COMPOSE_PATH_SEPARATOR`。
+
+例：`COMPOSE_FILE=docker-compose.yml:docker-compose.prod.yml`。
+
+##### `COMPOSE_PROFILES`
+
+用于**选择要启用的配置文件中的特定服务配置集**（也称为“配置文件”或“profiles”）。它允许用户在一个 Compose 文件中定义多个环境或配置集，并在不同场景下有选择地启用或禁用某些服务。
+
+##### `COMPOSE_CONVERT_WINDOWS_PATHS`
+
+启用后，Compose 会在卷定义中执行从 Windows 样式到 Unix 样式的路径转换。
+
+- 支持的值：
+  - `true`或`1`， 以启用
+  - `false`或`0`， 以禁用
+- 默认为：`0`
+
+##### `COMPOSE_PATH_SEPARATOR`
+
+为 `COMPOSE_FILE` 中列出的项目指定不同的路径分隔符。
+
+- 默认为：
+  - 在 macOS 和 Linux 上 `:`
+  - 在 Windows 上 `;`
+
+##### `COMPOSE_IGNORE_ORPHANS`
+
+启用后，Compose 不会尝试检测项目的孤立容器。
+
+**孤立服务**指的是在 Docker 中运行的容器，但这些容器**不再定义**在当前的 `docker-compose.yml` 文件中。孤立服务通常出现在以下场景：
+
+- 更新了 `docker-compose.yml` 文件，移除了某些服务，但这些服务的容器还在运行。
+- 使用了多个 Compose 文件（比如 `docker-compose.override.yml`）定义不同环境下的服务，但在某一环境下不再需要其中的某些服务。
+
+##### `COMPOSE_PARALLEL_LIMIT`
+
+作用：限制并行操作的最大任务数
+
+##### `COMPOSE_ANSI`
+
+指定何时打印 ANSI 控制字符。
+
+- 支持的值：
+  - `auto`，Compose 会检测是否可以使用 TTY 模式。否则，请使用纯文本模式。
+  - `never`，使用纯文本模式。
+  - `always`或者`0`，使用 TTY 模式。
+- 默认为： `auto`
+
+`COMPOSE_STATUS_STDOUT`
+
+默认情况下，Docker Compose 可能会将状态信息输出到终端（stderr），而 `COMPOSE_STATUS_STDOUT` 环境变量允许将状态信息转移到标准输出（stdout），方便脚本和工具处理这些输出。
+
+- 支持的值：
+  - `true`或 `1`， 以启用
+  - `false`或 `0`， 以禁用
+- 默认为：`0`
+
+`COMPOSE_ENV_FILES`
+
+允许您指定 Compose 在未使用`--env-file`时应使用哪些环境文件。
+
+使用多个环境文件时，请使用逗号作为分隔符。例如：
+
+```BASH
+COMPOSE_ENV_FILES=.env.envfile1, .env.envfile2
+```
+
+如果未设置`COMPOSE_ENV_FILES`，并且未在 CLI 中提供`--env-file`，则 Docker Compose 将使用默认行为，即在项目目录中查找`.env`文件。
+
+`COMPOSE_MENU`
+
+启用后，Compose 会显示一个导航菜单，您可以在其中选择在 Docker Desktop 中打开 Compose 堆栈，然后打开[`watch`模式](https://docs.docker.com/compose/how-tos/file-watch/)或使用 [Docker Debug](https://docs.docker.com/reference/cli/docker/debug/)。
+
+- 支持的值：
+  - `true`或 `1`， 以启用
+  - `false`或 `0`， 以禁用
+- 默认为`1`（前提是通过 Docker Desktop 获取了 Docker Compose）；否则默认为`0`。
+
+> 在 Docker Compose 版本 [2.26.0](https://docs.docker.com/compose/releases/release-notes/#2260) 及更高版本以及 Docker Desktop 版本 4.29 及更高版本中可用。
+
+`COMPOSE_EXPERIMENTAL`
+
+用于启用实验性功能。
+
+- 支持的值：
+  - `true`或 `1`， 以启用
+  - `false`或 `0`， 以禁用
+- 默认为`0`
+
+> 在 Docker Compose 版本 [2.26.0](https://docs.docker.com/compose/releases/release-notes/#2260) 及更高版本以及 Docker Desktop 版本 4.29 及更高版本中可用。
+
+##### 覆盖预定义的环境变量
+
+1. 工作目录中的`.env`文件
+2. Shell环境变量
+3. 命令行
 
 #### 插值
 
+插值（Interpolation）指的是在 `docker-compose.yml` 文件中通过引用环境变量来动态填充配置值。这种方式可以让 Compose 文件更灵活，尤其是在不同环境中复用配置时。插值功能允许在 Compose 文件的各项配置（如镜像名、端口、卷路径等）中使用外部定义的环境变量，确保配置的简洁性和可维护性。
 
+**插值语法**
 
-#### 最佳实践
+- 直接替换
+  - `${VAR}`：环境变量中的`VAR`值
+- 默认值
+  - `${VAR:-default}`：若`VAR`已设置且不为空，则为`VAR`，否则为`default`
+  - `${VAR-default}`：若`VAR`已设置，则为`VAR`，否则为`default`
+- 必须的值
+  - `${VAR:?error}`：若`VAR`已设置且不为空，则为`VAR`，否则退出并报错
+  - `${VAR?error}`：若`VAR`已设置，则为`VAR`，否则退出并报错
+- 可代替的值
+  - `${VAR:+replacement}`:若`VAR`已设置且不为空，则为`replacement`,否则为空
+  - `${VAR+replacement}`:若`VAR`已设置，则为`replacement`,否则为空
 
+**设置用于插值的变量**
 
+1. SHELL环境变量
+2. 若未指定`--env-file`，则为本地工作目录的`.env`文件中的变量
+
+> 可以使用`docker compose config --environment`检查可用的变量/值
+
+#### `.env`文件语法
+
+以下语法规则适用于环境文件：
+
+- 以`#`开头的行将作为注释处理并忽略。
+- 空行将被忽略。
+- 未加引号和双引号的 （`"`） 值应用了插值。
+- 每行表示一个键值对。值可以选择引用。
+  - `VAR=VAL` -> `VAL`
+  - `VAR="VAL"` -> `VAL`
+  - `VAR='VAL'` -> `VAL`
+- 未加引号的值的内联注释前面必须有空格。
+  - `VAR=VAL # comment` -> `VAL`
+  - `VAR=VAL# not a comment` -> `VAL# not a comment`
+- 带引号的值的内联注释必须跟在结束引号后面。
+  - `VAR="VAL # not a comment"` -> `VAL # not a comment`
+  - `VAR="VAL" # comment` -> `VAL`
+- 单引号 （`'`） 值按字面意思使用。
+  - `VAR='$OTHER'` -> `$OTHER`
+  - `VAR='${OTHER}'` -> `${OTHER}`
+- 引号可以用`\`
+  - `VAR='Let\'s go!'` -> `Let's go!`
+  - `VAR="{\"hello\": \"json\"}"` -> `{"hello": "json"}`
+- 常见的 shell 转义序列包括`\n`、`\r`、`\t`、`\\` 和 在双引号值中受支持。
+  - `VAR="some\tvalue"` -> `some value`
+  - `VAR='some\tvalue'` -> `some\tvalue`
+  - `VAR=some\tvalue` -> `some\tvalue`
+
+### Compose Watch
 
 
 
