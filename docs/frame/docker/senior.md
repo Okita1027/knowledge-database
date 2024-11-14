@@ -1230,6 +1230,40 @@ services:
 - `dir/**/*.js`：匹配 `dir` 目录及其所有子目录下的 `.js` 文件。
 - `**/*.txt`：匹配当前目录及其所有子目录下的 `.txt` 文件。
 
+### Compose Secrets
+
+**密钥**（Secrets）主要用于管理和保护敏感信息（如 API 密钥、数据库密码等），使其能够安全地传递到容器中。Docker Compose 提供了一种通过 `secrets` 配置来处理和使用这些敏感数据的机制，通常用于确保在容器之间安全地传递敏感信息，而不会将这些信息暴露在配置文件中。
+
+**特点**
+
+- **加密存储**：所有密钥都会加密存储，只有需要它们的服务才能访问。
+- **仅对服务暴露**：Secrets 不会被暴露给 Docker 容器之外的进程，只有通过 Docker Compose 或 Docker Swarm 部署的服务能够访问。
+- **有限的生命周期**：Secrets 会在需要时自动传递给容器，而不会保存在容器中，生命周期有限。
+
+**使用案例**
+
+```yaml
+version: '3.9'
+
+services:
+  web:
+    image: myapp
+    secrets:
+      - db_password
+    environment:
+      - DB_PASSWORD=/run/secrets/db_password
+
+secrets:
+  db_password:
+    file: ./db_password.txt
+```
+
+- `db_password` 是我们定义的 secret。
+- `file: ./db_password.txt` 指定了存储敏感数据的文件（可以是本地文件路径）。
+- 在 `web` 服务中通过 `secrets` 字段将 `db_password` 添加到服务中，并在环境变量中使用 `/run/secrets/db_password` 来访问这个密钥。
+
+
+
 ## Portainter
 
 
