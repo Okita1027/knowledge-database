@@ -1072,11 +1072,163 @@ COMPOSE_ENV_FILES=.env.envfile1, .env.envfile2
 
 ### Compose Watch
 
+`Compose Watch` 是 Docker Compose 的一个**实验性功能**，允许在服务的文件内容变化时自动触发重新构建和重启。这对于开发环境特别有用，因为它能在代码文件更新时自动反映在容器中，而无需手动重启服务，提升了开发效率。
 
+启用实验性功能的方法有：
 
+1. 在系统的环境变量中设置 `COMPOSE_EXPERIMENTAL`为`enabled`
 
+   ```bash
+   export COMPOSE_EXPERIMENTAL=enabled
+   ```
 
+2. 在`.env`文件中添加
 
+   ```env
+   COMPOSE_EXPERIMENTAL=enabled
+   ```
+
+`watch`遵循以下文件路径规则：
+
+- 所有路径都相对于项目目录
+- 以递归方式监视目录
+- 不支持 **glob** 模式
+- `.dockerignore`中定义的规则
+  - 使用`ignore`选项定义额外的被忽略路径
+  - 常见IDEs（Vim、Emacs、JetBrains等）的临时/备份文件会自动忽略
+  - `.git`目录会自动被忽略
+
+#### 使用方法
+
+1. 将`watch`部分添加到一个或多个`compose.yaml`服务中
+2. 运行`docker compose up --watch`以构建和启动Compose项目并启动文件观看模式。
+3. 使用您首选的IDE或编辑器编辑服务源文件。
+
+#### `action`
+
+**Sync**
+
+`action`如果设置为`sync`，则 Compose 可确保对主机上的文件所做的任何更改都自动与服务容器中的相应文件匹配
+
+`sync`非常适合支持 “Hot Reload” 或等效功能的框架。
+
+更一般地说，在许多开发用例中，`sync`可以代替bind mount。
+
+**Rebuild**
+
+`action`如果设置为`rebuild`，则 Compose 会自动使用 BuildKit 构建新映像，并替换正在运行的服务容器。
+
+该行为与运行`docker compose up --build <svc>`是相同的。
+
+Rebuild 非常适合编译语言，或者作为需要对镜像完整重建的后备方案（例如 `package.json` ）。
+
+**Sync+Restart**
+
+`action`如果设置为`sync+restart`，则 Compose 会将更改与服务容器同步并重新启动它。
+
+当配置文件发生变化时，`sync+restart`是理想的选择，您不需要重建镜像，只需重新启动服务容器的主进程即可。例如，当您更新数据库配置或`nginx.conf`文件时，它会很好地工作
+
+#### 示例
+
+```目录结构
+myproject/
+├── web/
+│   ├── App.jsx
+│   └── index.js
+├── Dockerfile
+├── compose.yaml
+└── package.json
+```
+
+```yaml
+services:
+  web:
+    build: .
+    command: npm start
+    develop:
+      watch:
+        - action: sync
+          path: ./web
+          target: /src/web
+          ignore:
+            - node_modules/
+        - action: rebuild
+          path: package.json
+```
+
+在本例中，当运行`docker compose up --watch`时，使用从项目根目录中的Dockerfile构建的镜像启动Web服务的容器。Web服务为其命令运行`npm start`，然后启动应用程序的开发版本（Webpack、Vite、Turbopack等），该应用程序在Inbox中启用了Hot Mode Inbox。 
+
+服务启动后，监视模式开始监视目标目录和文件。然后，每当`web/`目录中的源文件发生更改时，Compose就会将该文件同步到容器内`/src/web`下的相应位置。例如`./web/App.jsx`被复制到`/src/web/App.jsx`。 
+
+复制后，分配器会更新正在运行的应用程序，而无需重新启动。 
+
+与源代码文件不同，添加新的依赖项不能实时完成，因此每当`Package.json`更改时，Compose都会重新构建镜像并重新创建Web服务容器。
+
+---
+
+```yaml
+services:
+  web:
+    build: .
+    command: npm start
+    develop:
+      watch:
+        - action: sync
+          path: ./web
+          target: /app/web
+          ignore:
+            - node_modules/
+        - action: sync+restart
+          path: ./proxy/nginx.conf
+          target: /etc/nginx/conf.d/default.conf
+
+  backend:
+    build:
+      context: backend
+      target: builder
+```
+
+此设置演示了如何使用Docker Compose中的同步+重启操作来高效地开发和测试具有前端Web服务器和后台服务的Node.js应用程序。该配置确保对应用程序代码和配置文件的更改快速同步和应用，并根据需要重新启动Web服务以反映更改。
+
+#### glob模式
+
+**`\*`（星号）**
+匹配任意数量的字符（包括零个字符）。它通常用来匹配文件名或目录中的任意部分。
+
+示例：
+
+- `*.txt`：匹配当前目录下所有扩展名为 `.txt` 的文件。
+- `dir/*.js`：匹配 `dir` 目录下所有扩展名为 `.js` 的文件。
+
+**`?`（问号）**
+匹配一个字符（只能匹配一个字符）。通常用于匹配特定位置的单个字符。
+
+示例：
+
+- `file?.txt`：匹配 `file1.txt`、`fileA.txt` 等，但不匹配 `file10.txt`。
+
+**`[...]`（方括号）**
+匹配方括号内的任意单个字符。可以指定一个字符集，匹配其中任意一个字符。
+
+示例：
+
+- `file[123].txt`：匹配 `file1.txt`、`file2.txt`、`file3.txt`，但不匹配 `file4.txt`。
+- `file[a-d].txt`：匹配 `filea.txt`、`fileb.txt`、`filec.txt`、`filed.txt`。
+
+**`{}`（花括号）**
+花括号用来指定多个选项的匹配，类似于正则表达式中的替代符号。
+
+示例：
+
+- `file.{txt,md}`：匹配 `file.txt` 或 `file.md`。
+
+**`\**`（双星号）**
+匹配零个或多个目录（递归匹配）。这是一个扩展特性，不是所有的 glob 实现都支持。在 Docker Compose 中使用时，可以用来匹配子目录。
+
+示例：
+
+- `dir/**/*.js`：匹配 `dir` 目录及其所有子目录下的 `.js` 文件。
+- `**/*.txt`：匹配当前目录及其所有子目录下的 `.txt` 文件。
 
 ## Portainter
 
