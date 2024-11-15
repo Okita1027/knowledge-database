@@ -1262,7 +1262,100 @@ secrets:
 - `file: ./db_password.txt` 指定了存储敏感数据的文件（可以是本地文件路径）。
 - 在 `web` 服务中通过 `secrets` 字段将 `db_password` 添加到服务中，并在环境变量中使用 `/run/secrets/db_password` 来访问这个密钥。
 
+### Compose network
 
+在 Docker Compose 中，每个服务默认都会连接到一个自动创建的网络。这个网络的名称是由 Compose 项目名称和 `_default` 后缀组成的。例如，如果你的 Compose 项目名称是 `myapp`，默认的网络名称将是 `myapp_default`。
+
+在默认的情况下，Docker Compose 会创建一个桥接网络（bridge network）。在同一个网络中的容器可以相互通信，而默认网络对于容器间的 DNS 解析和通信是透明的。
+
+**默认网络的行为：**
+
+- 每个服务可以通过服务名访问其他服务。
+- 默认情况下，不同 Compose 项目中的容器之间是隔离的。
+
+**更新网络上的容器：**
+
+如果您对服务进行配置更改并运行`docker compose up`更新，旧容器将被删除，新容器将使用不同的 IP 地址（但名称相同）加入网络。正在运行的容器可以查找该名称并连接到新地址，但旧地址将停止工作。
+
+如果任何容器与旧容器有连接，则这些连接将被关闭。容器负责检测此情况，再次查找名称并重新连接。
+
+> 尽可能通过名称而不是 IP 引用容器。否则，您需要不断更新您使用的 IP 地址。
+
+**配置默认网络**
+
+```yaml
+services:
+  web:
+    build: .
+    ports:
+      - "8000:8000"
+  db:
+    image: postgres
+
+networks:
+  default:
+    # Use a custom driver
+    driver: custom-driver-1
+```
+
+**配置自定义网络：**
+
+可以在 Compose 文件的 `networks` 部分定义一个或多个自定义网络。然后，使用 `networks` 关键字将服务连接到这些网络。
+
+```yaml
+version: '3.9'
+
+services:
+  web:
+    image: myapp
+    networks:
+      - front
+  db:
+    image: postgres
+    networks:
+      - back
+  proxy:
+  	image: nginx
+  	networks:
+  	  - front
+  	  - back
+
+networks:
+  front:
+    driver: bridge
+  back:
+    driver: bridge
+```
+
+在这个例子中，`front` 和 `back` 是两个自定义网络：
+
+- `web` 服务连接到 `front` 网络。
+- `db` 服务连接到 `back` 网络。
+- `proxy`连接到 `front` 和 `back` 网络，`web `和 `db `不能直接通信。
+
+> 其它知识点：
+>
+> - 可以通过为每个连接的网络设置[ipv4_address 和/或 ipv6_address](https://docs.docker.com/reference/compose-file/services/#ipv4_address-ipv6_address)来为网络配置静态 IP 地址 。
+> - 网络也可以被赋予 [自定义名称](https://docs.docker.com/reference/compose-file/networks/#name)：
+
+**使用现有网络**
+
+如果你希望容器加入现有网络，请使用以下[`external`选项](https://docs.docker.com/reference/compose-file/networks/#external)
+
+```yaml
+services:
+  # ...
+networks:
+  network1:
+    name: my-pre-existing-network
+    external: true
+```
+
+Compose不会尝试创建一个名为 `[projectname]_default的网络`，而是寻找一个名为 `my-pre-existing-network` 的网络并将您应用的容器连接到该网络。
+
+### 使用多个Compose文件
+
+使用多个 Compose 文件，您可以针对不同的环境或工作流自定义 Compose 应用程序。这对于可能使用数十个容器且所有权分布在多个团队的大型应用程序非常有用。
 
 ## Portainter
 
