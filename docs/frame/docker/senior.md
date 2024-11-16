@@ -1357,7 +1357,362 @@ Compose不会尝试创建一个名为 `[projectname]_default的网络`，而是�
 
 使用多个 Compose 文件，您可以针对不同的环境或工作流自定义 Compose 应用程序。这对于可能使用数十个容器且所有权分布在多个团队的大型应用程序非常有用。
 
+#### Merge
+
+默认情况下，Compose 会读取两个文件，一个`compose.yaml`和可选 `compose.override.yaml`文件。按照惯例，`compose.yaml` 包含您的基本配置。覆盖文件可以包含现有服务或全新服务的配置覆盖。
+
+如果两个文件中都定义了一个服务，Compose 将使用下面描述的规则和 [Compose 规范](https://docs.docker.com/reference/compose-file/merge/)中描述的规则合并配置。
+
+**使用方法**
+
+要使用多个覆盖文件或具有不同名称的覆盖文件，您可以使用预定义的 [COMPOSE_FILE](https://docs.docker.com/compose/how-tos/environment-variables/envvars/#compose_file)环境变量，或使用`-f`选项指定文件列表。
+
+Compose 按照命令行中指定的顺序合并文件。后续文件可能会合并、覆盖或添加到其前一个文件。
+
+例如：`docker compose -f compose.yaml -f compose.admin.yaml run backup_db`
+
+该`compose.yaml`文件可能指定一项`webapp`服务。
+
+```yaml
+webapp:
+  image: examples/web
+  ports:
+    - "8000:8000"
+  volumes:
+    - "/data"
+```
+
+也可以`compose.admin.yaml`指定相同的服务：
+
+```yaml
+webapp:
+  environment:
+    - DEBUG=1
+```
+
+任何匹配的字段都会覆盖前一个文件。新值会添加到`webapp`服务配置中：
+
+```yaml
+webapp:
+  image: examples/web
+  ports:
+    - "8000:8000"
+  volumes:
+    - "/data"
+  environment:
+    - DEBUG=1
+```
+
+**合并规则**
+
+路径是相对于基础文件进行评估的。使用多个 Compose 文件时，必须确保文件中的所有路径都相对于基础 Compose 文件（使用`-f`指定的第一个 Compose 文件）。这是必需的，因为覆盖文件不必是有效的 Compose 文件。覆盖文件可以包含小段配置。跟踪服务的哪个片段与哪个路径相关既困难又令人困惑，因此为了让路径更容易理解，所有路径都必须相对于基础文件进行定义。
+
+> [!tip]
+>
+> 可以使用`docker compose config`来检查合并的配置并避免与路径相关的问题。
+
+Compose 将配置从原始服务复制到本地服务。如果原始服务和本地服务中都定义了配置选项，则本地值将替换或扩展原始值。
+
+- 对于单值选项（如`image`、`command`或`mem_limit`），新值将替换旧值。
+
+  原有服务：
+
+  ```yaml
+  services:
+    myservice:
+      # ...
+      command: python app.py
+  ```
+
+  本地服务：
+
+  ```yaml
+  services:
+    myservice:
+      # ...
+      command: python otherapp.py
+  ```
+
+  结果：
+
+  ```yaml
+  services:
+    myservice:
+      # ...
+      command: python otherapp.py
+  ```
+
+- 对于多值选项`ports`、`expose`、`external_links`、`dns`、`dns_search`和`tmpfs`，Compose 将连接两组值：
+
+  原有服务：
+
+  ```yaml
+  services:
+    myservice:
+      # ...
+      expose:
+        - "3000"
+  ```
+
+  本地服务：
+
+  ```yaml
+  services:
+    myservice:
+      # ...
+      expose:
+        - "4000"
+        - "5000"
+  ```
+
+  结果：
+
+  ```yaml
+  services:
+    myservice:
+      # ...
+      expose:
+        - "3000"
+        - "4000"
+        - "5000"
+  ```
+
+- 对于`environment`、`labels`、`volumes`和`devices`，Compose 会将条目“合并”在一起，其中本地定义的值优先。对于`environment`和`labels`，环境变量或标签名称决定使用哪个值：
+
+  原有服务：
+
+  ```yaml
+  services:
+    myservice:
+      # ...
+      environment:
+        - FOO=original
+        - BAR=original
+  ```
+
+  本地服务：
+
+  ```yaml
+  services:
+    myservice:
+      # ...
+      environment:
+        - BAR=local
+        - BAZ=local
+  ```
+
+  结果：
+
+  ```yaml
+  services:
+    myservice:
+      # ...
+      environment:
+        - FOO=original
+        - BAR=local
+        - BAZ=local
+  ```
+
+- `volumes`和 的条目`devices`使用容器中的挂载路径合并：
+
+  原有服务：
+
+  ```yaml
+  services:
+    myservice:
+      # ...
+      volumes:
+        - ./original:/foo
+        - ./original:/bar
+  ```
+
+  本地服务：
+
+  ```yaml
+  services:
+    myservice:
+      # ...
+      volumes:
+        - ./local:/bar
+        - ./local:/baz
+  ```
+
+  结果：
+
+  ```yaml
+  services:
+    myservice:
+      # ...
+      volumes:
+        - ./original:/foo
+        - ./local:/bar
+        - ./local:/baz
+  ```
+
+> 有关更多合并规则，请参阅 Compose 规范中的[合并与覆盖。](https://docs.docker.com/reference/compose-file/merge/)
+
+#### Extend
+
+Docker Compose的[`extends`属性](https://docs.docker.com/reference/compose-file/services/#extends)可以在不同的文件之间，甚至完全不同的项目之间共享通用配置。
+
+如果有多个服务重复使用一组通用的配置选项，那么扩展服务会很有用。`extends`您可以在一个地方定义一组通用的服务选项，并从任何地方引用它。您可以引用另一个 Compose 文件并选择您想在自己的应用程序中使用的服务，并能够根据自己的需要覆盖某些属性。
+
+> [!important]
+>
+> 当您使用多个 Compose 文件时，必须确保文件中的所有路径都相对于基本 Compose 文件（即主项目文件夹中的 Compose 文件）。这是必需的，因为扩展文件不必是有效的 Compose 文件。
+
+**从另一个文件扩展服务**
+
+示例：
+
+```yaml
+services:
+  web:
+    extends:
+      file: common-services.yml
+      service: webapp
+```
+
+这指示 Compose 仅重复使用文件`webapp`中定义的服务的属性`common-services.yml`。`webapp`服务本身不是最终项目的一部分。
+
+如果`common-services.yml` 看起来像这样：
+
+```yaml
+services:
+  webapp:
+    build: .
+    ports:
+      - "8000:8000"
+    volumes:
+      - "/data"
+```
+
+您获得的结果与使用`docker-compose.yml`在`web`下直接定义的相同`build`、`ports`和`volumes`配置值所写的结果完全相同。
+
+
+
+要在从另一个文件扩展服务时将该服务包含`webapp`在最终项目中，您需要在当前 Compose 文件中明确包含这两项服务。例如（注意，这是一个非规范示例）：
+
+```yaml
+services:
+  web:
+    build: alpine
+    command: echo
+    extends:
+      file: common-services.yml
+      service: webapp
+  webapp:
+    extends:
+      file: common-services.yml
+      service: webapp
+```
+
+或者使用 [include](https://docs.docker.com/compose/how-tos/multiple-compose-files/include/)。
+
+**在同一个文件中扩展服务**
+
+如果在同一个 Compose 文件中定义服务并从另一个服务扩展一个服务，则原始服务和扩展服务都将成为最终配置的一部分。例如：
+
+```yaml
+services:
+  web:
+    build: alpine
+    extends: webapp
+  webapp:
+    environment:
+      - DEBUG=1
+```
+
+**在同一个文件内以及从另一个文件扩展服务**
+
+可以进一步在本地定义或重新定义配置 `compose.yaml`：
+
+```yaml
+services:
+  web:
+    extends:
+      file: common-services.yml
+      service: webapp
+    environment:
+      - DEBUG=1
+    cpu_shares: 5
+
+  important_web:
+    extends: web
+    cpu_shares: 10
+```
+
+#### Include
+
+> [!caution]
+>
+> docker com­pose 中 in­clude 的原理类似于把被 in­clude 文件的内容复制粘贴进当前的文件，所以与 `Extend` 与 `Merge` 的行为不同，同名的资源将不会被合并，而是直接报错 `defines conflicting service/network`，所以仅建议将 in­clude 用于拆分文件
+
+基础示例：
+
+```yaml
+services:
+  A:
+    image: A
+  B:
+    image: B
+  C:
+    image: C
+```
+
+以上文件使用 in­clude 选项可以拆分为以下文件：
+
+```yaml
+# a.yml
+services:
+  A:
+    image: nginx
+```
+
+```yaml
+# b.yml
+services:
+  B:
+    image: nginx
+```
+
+```yaml
+# compose.yml
+include:
+  - a.yml
+  - b.yml
+
+services:
+  C:
+    image: nginx
+```
+
+此时使用 `docker compose config` 命令解析配置文件，可以看到 com­pose 文件被解析为了:
+
+```yaml
+❯ docker compose config
+name: compose
+services:
+  A:
+    image: nginx
+    networks:
+      default: null
+  B:
+    image: nginx
+    networks:
+      default: null
+  C:
+    image: nginx
+    networks:
+      default: null
+networks:
+  default:
+    name: compose_default
+```
+
+使用 `docker compose up -d` 即可启动全部服务
+
 ## Portainter
 
-
+Docker可视化工具：[Portainer](https://docs.portainer.io/start/intro)
 
