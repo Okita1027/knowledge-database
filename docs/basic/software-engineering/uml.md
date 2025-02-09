@@ -37,7 +37,6 @@ class Employee {
 	-String: address
 	+work() void
 }
-
 ```
 
 属性/方法名称前加的加号和减号表示了这个属性/方法的可见性，UML类图中表示可见性的符号有四种：

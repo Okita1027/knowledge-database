@@ -207,7 +207,7 @@ WHERE e.department_id = d.department_id;
 ### InnoDB
 
 -  介绍 
-   - InnoDB是一种兼顾高可靠性和高性能的通用存储引擎，在 MySQL 5.5 之后，InnoDB是默认的MySQL 存储引擎。
+   - InnoDB是一种兼顾高可靠性和高性能的通用存储引擎，在 MySQL 5.5 之后，InnoDB是默认的 MySQL 存储引擎。
 -  特点 
    - DML操作遵循ACID模型，支持事务；
    - 行级锁，提高并发访问性能；
@@ -254,9 +254,11 @@ WHERE e.department_id = d.department_id;
 ![image.png](https://cdn.jsdelivr.net/gh/Okita1027/knowledge-database-images@main/database/mysql/engine02.png)
 **面试题:**
 InnoDB引擎与MyISAM引擎的区别 ?
-①. InnoDB引擎, 支持事务, 而MyISAM不支持。
-②. InnoDB引擎, 支持行锁和表锁, 而MyISAM仅支持表锁, 不支持行锁。
-③. InnoDB引擎, 支持外键, 而MyISAM是不支持的。
+
+1. InnoDB引擎, 支持事务, 而MyISAM不支持。
+2. InnoDB引擎, 支持行锁和表锁, 而MyISAM仅支持表锁, 不支持行锁。
+3. InnoDB引擎, 支持外键, 而MyISAM是不支持的。
+
 主要是上述三点区别，当然也可以从索引结构、存储限制等方面，更加深入的回答，具体参考如下官方文档：
 
 > [https://dev.mysql.com/doc/refman/8.0/en/innodb-introduction.html](https://dev.mysql.com/doc/refman/8.0/en/innodb-introduction.html)
@@ -265,23 +267,30 @@ InnoDB引擎与MyISAM引擎的区别 ?
 #### 存储引擎选择
 
 -  InnoDB: 是Mysql的默认存储引擎，支持事务、外键。如果应用对事务的完整性有比较高的要求，在并发条件下要求数据的一致性，数据操作除了插入和查询之外，还包含很多的更新、删除操作，那么InnoDB存储引擎是比较合适的选择。 
--  MyISAM ： 如果应用是以读操作和插入操作为主，只有很少的更新和删除操作，并且对事务的完整性、并发性要求不是很高，那么选择这个存储引擎是非常合适的。（不如直接用MongoDB） 
+-  MyISAM：如果应用是以读操作和插入操作为主，只有很少的更新和删除操作，并且对事务的完整性、并发性要求不是很高，那么选择这个存储引擎是非常合适的。（不如直接用MongoDB） 
 -  MEMORY：将所有数据保存在内存中，访问速度快，通常用于临时表及缓存。MEMORY的缺陷就是对表的大小有限制，太大的表无法缓存在内存中，而且无法保障数据的安全性。（不如直接用Redis） 
 ## 性能分析
 ### 查看执行频次
 查看当前数据库的 INSERT, UPDATE, DELETE, SELECT 访问频次：
 `SHOW GLOBAL STATUS LIKE 'Com_______';` 或者 `SHOW SESSION STATUS LIKE 'Com_______';`
 例：`show global status like 'Com_______'`(7个下划线)
+
 ### 慢查询日志
 慢查询日志记录了所有执行时间超过指定参数（long_query_time，单位：秒，默认10秒）的所有SQL语句的日志。
 MySQL的慢查询日志默认没有开启，需要在MySQL的配置文件（/etc/my.cnf）中配置如下信息：
+
 ## 开启慢查询日志开关
 slow_query_log=1
-## 设置慢查询日志的时间为2秒，SQL语句执行时间超过2秒，就会视为慢查询，记录慢查询日志
+
+设置慢查询日志的时间为2秒，SQL语句执行时间超过2秒，就会视为慢查询，记录慢查询日志
+
 long_query_time=2
+
 更改后记得重启MySQL服务，日志文件位置：/var/lib/mysql/localhost-slow.log
+
 查看慢查询日志开关状态：
 `show variables like 'slow_query_log';`
+
 ### profile
 show profile 能在做SQL优化时帮我们了解时间都耗费在哪里。通过 have_profiling 参数，能看到当前 MySQL 是否支持 profile 操作：
 `SELECT @@have_profiling;`
@@ -293,10 +302,13 @@ profiling 默认关闭，可以通过set语句在session/global级别开启 prof
 `show profile for query query_id;`
 查看指定query_id的SQL语句CPU的使用情况
 `show profile cpu for query query_id;`
+
 ### explain
 EXPLAIN 或者 DESC 命令获取 MySQL 如何执行 SELECT 语句的信息，包括在 SELECT 语句执行过程中表如何连接和连接的顺序。
 语法：
-## 直接在select语句之前加上关键字 explain / desc
+
+### 直接在select语句前加关键字 explain / desc
+
 EXPLAIN SELECT 字段列表 FROM 表名 HWERE 条件;
 EXPLAIN 各字段含义：
 
@@ -304,31 +316,31 @@ EXPLAIN 各字段含义：
 -  select_type：表示 SELECT 的类型，常见取值有 SIMPLE（简单表，即不适用表连接或者子查询）、PRIMARY（主查询，即外层的查询）、UNION（UNION中的第二个或者后面的查询语句）、SUBQUERY（SELECT/WHERE之后包含了子查询）等 
 -  type：表示连接类型，性能由好到差的连接类型为 NULL、system、const、eq_ref、ref、range、index、all 
    - 常见的扫描方式
-   1、system：系统表，少量数据，往往不需要进行磁盘IO；
-   2、const：常量连接；
-   3、eq_ref：主键索引(primary key)或者非空唯一索引(unique not null)等值扫描；
-   4、ref：非主键非唯一索引等值扫描；
-   5、range：范围扫描；
-   6、index：索引树扫描；
-   7、ALL：全表扫描(full table scan)；
+     - system：系统表，少量数据，往往不需要进行磁盘IO；
+     - const：常量连接；
+     - eq_ref：主键索引(primary key)或者非空唯一索引(unique not null)等值扫描；
+     - ref：非主键非唯一索引等值扫描；
+     - range：范围扫描；
+     - index：索引树扫描；
+     - ALL：全表扫描(full table scan)；
    - 各扫描类型的要点
+     - system最快：不进行磁盘IO
+     - const：PK或者unique上的等值查询
+     - eq_ref：PK或者unique上的join查询，等值匹配，对于前表的每一行(row)，后表只有一行命中
+     - ref：非唯一索引，等值匹配，可能有多行命中
+     - range：索引上的范围扫描，例如：between/in/>
+     - index：索引上的全集扫描，例如：InnoDB的count
+     - ALL最慢：全表扫描(full table scan)
 
-1、system最快：不进行磁盘IO　　
-　　2、const：PK或者unique上的等值查询
-　　3、eq_ref：PK或者unique上的join查询，等值匹配，对于前表的每一行(row)，后表只有一行命中
-　　4、ref：非唯一索引，等值匹配，可能有多行命中
-　　5、range：索引上的范围扫描，例如：between/in/>
-　　6、index：索引上的全集扫描，例如：InnoDB的count
-　　7、ALL最慢：全表扫描(full table scan) 
-
--  possible_key：可能应用在这张表上的索引，一个或多个 
--  Key：实际使用的索引，如果为 NULL，则没有使用索引 
--  Key_len：表示索引中使用的字节数，该值为索引字段最大可能长度，并非实际使用长度，在不损失精确性的前提下，长度越短越好 
--  rows：MySQL认为必须要执行的行数，在InnoDB引擎的表中，是一个估计值，可能并不总是准确的 
--  filtered：表示返回结果的行数占需读取行数的百分比，filtered的值越大越好 
+-  possible_key：可能应用在这张表上的索引，一个或多个
+-  Key：实际使用的索引，如果为 NULL，则没有使用索引
+-  Key_len：表示索引中使用的字节数，该值为索引字段最大可能长度，并非实际使用长度，在不损失精确性的前提下，长度越短越好
+-  rows：MySQL认为必须要执行的行数，在InnoDB引擎的表中，是一个估计值，可能并不总是准确的
+-  filtered：表示返回结果的行数占需读取行数的百分比，filtered的值越大越好
 ## 索引
 
 索引是帮助 MySQL **高效获取数据**的**数据结构（有序）**。在数据之外，数据库系统还维护着满足特定查找算法的数据结构，这些数据结构以某种方式引用（指向）数据，这样就可以在这些数据结构上实现高级查询算法，这种数据结构就是索引。
+
 优点：
 
 - 提高数据检索效率，降低数据库的IO成本
@@ -365,11 +377,12 @@ B-Tree，B树是一种多叉路衡查找树，相对于二叉树，B树每个节
 以一颗最大度数（max-degree）为5(5阶)的b-tree为例，那这个B树每个节点最多存储4个key，5个指针：
 ![image.png](https://cdn.jsdelivr.net/gh/Okita1027/knowledge-database-images@main/database/mysql/index03.png)
 树的度数指的是一个节点的子节点个数。
+
 特点：
 
--  5阶的B树，每一个节点最多存储4个key，对应5个指针。 
--  一旦节点存储的key数量到达5，就会裂变，中间元素向上分裂。 
--  在B树中，非叶子节点和叶子节点都会存放数据。 
+-  5阶的B树，每一个节点最多存储4个key，对应5个指针。
+-  一旦节点存储的key数量到达5，就会裂变，中间元素向上分裂。
+-  在B树中，非叶子节点和叶子节点都会存放数据。
 
 数据结构演示地址：
 > [https://www.cs.usfca.edu/~galles/visualization/BTree.html](https://www.cs.usfca.edu/~galles/visualization/BTree.html)
@@ -408,7 +421,7 @@ MySQL 索引数据结构对经典的 B+Tree 进行了优化。在原 B+Tree 的�
 
 1. 为什么 InnoDB 存储引擎选择使用 B+Tree 索引结构？
 - 相对于二叉树，层级更少，搜索效率高
-- 对于 B-Tree，无论是叶子节点还是非叶子节点，都会保存数据，这样导致一页中存储的键值减少，指针也跟着减少，要同样保存大量数据，只能增加树的高度，导致性能降低
+- 相对于 B Tree，无论是叶子节点还是非叶子节点，都会保存数据，这样导致一页中存储的键值减少，指针也跟着减少，要同样保存大量数据，只能增加树的高度，导致性能降低
 - 相对于 Hash 索引，B+Tree 支持范围匹配及排序操作
 ### 索引分类
 | 分类 | 含义 | 特点 | 关键字 |
@@ -430,9 +443,11 @@ MySQL 索引数据结构对经典的 B+Tree 进行了优化。在原 B+Tree 的�
 ![image.png](https://cdn.jsdelivr.net/gh/Okita1027/knowledge-database-images@main/database/mysql/index07.png)
 ![image.png](https://cdn.jsdelivr.net/gh/Okita1027/knowledge-database-images@main/database/mysql/index08.png)
 语句执行具体过程如下:
-①. 由于是根据name字段进行查询，所以先根据name='Arm'到name字段的二级索引中进行匹配查找。但是在二级索引中只能查找到 Arm 对应的主键值 10。
-②. 由于查询返回的数据是*，所以此时，还需要根据主键值10，到聚集索引中查找10对应的记录，最终找到10对应的行row。
-③. 最终拿到这一行的数据，直接返回即可。
+
+1. 由于是根据name字段进行查询，所以先根据name='Arm'到name字段的二级索引中进行匹配查找。但是在二级索引中只能查找到 Arm 对应的主键值 10。
+2. 由于查询返回的数据是*，所以此时，还需要根据主键值10，到聚集索引中查找10对应的记录，最终找到10对应的行row。
+3. 最终拿到这一行的数据，直接返回即可。
+
 聚集索引选取规则：
 
 - 如果存在主键，主键索引就是聚集索引
@@ -447,16 +462,18 @@ select * from user where name = 'Arm';
 ```
 答：第一条语句，因为第二条需要回表查询，相当于两个步骤。
 2. InnoDB 主键索引的 B+Tree 高度为多少？
-答：假设一行数据大小为1k，一页中可以存储16行这样的数据。InnoDB 的指针占用6个字节的空间，主键假设为bigint，占用字节数为8.
+
+答：假设一行数据大小为1k，一页中可以存储16行这样的数据。InnoDB 的指针占用6个字节的空间，主键假设为bigint，占用字节数为8。
 可得公式：`n * 8 + (n + 1) * 6 = 16 * 1024`，其中 8 表示 bigint 占用的字节数，n 表示当前节点存储的key的数量，(n + 1) 表示指针数量（比key多一个）。算出n约为1170。
 如果树的高度为2，那么他能存储的数据量大概为：`1171 * 16 = 18736`；
 如果树的高度为3，那么他能存储的数据量大概为：`1171 * 1171 * 16 = 21939856`。
 另外，如果有成千上万的数据，那么就要考虑分表，涉及运维篇知识。
+
 ### 索引语法
 
 -  创建索引：
 `CREATE [ UNIQUE | FULLTEXT ] INDEX index_name ON table_name (index_col_name, ...);`
-如果不加 CREATE 后面不加索引类型参数，则创建的是常规索引 
+如果 CREATE 后面不加索引类型参数，则创建的是常规索引 
 -  查看索引：
 `SHOW INDEX FROM table_name;` 
 -  删除索引：
@@ -477,13 +494,16 @@ drop index idx_user_email on tb_user;
 ### 使用规则
 #### 最左前缀法则
 如果索引关联了多列（联合索引），要遵守最左前缀法则，最左前缀法则指的是查询从索引的最左列开始，并且不跳过索引中的列。
+
 如果跳跃某一列，索引将部分失效（后面的字段索引失效）。
+
 联合索引中，出现范围查询（<, >），范围查询右侧的列索引失效。可以用>=或者<=来规避索引失效问题。
+
 #### 索引失效情况
 
 1. 在索引列上进行运算操作，索引将失效。如：`explain select * from tb_user where substring(phone, 10, 2) = '15';`
 2. 字符串类型字段使用时，不加引号，索引将失效。如：`explain select * from tb_user where phone = 17799990015;`，此处phone的值没有加引号
-3. 模糊查询中，如果仅仅是尾部模糊匹配，索引不会是失效；如果是头部模糊匹配，索引失效。如：`explain select * from tb_user where profession like '%工程';`，前后都有 % 也会失效。
+3. 模糊查询中，如果仅仅是尾部模糊匹配，索引不会失效；如果是头部模糊匹配，索引失效。如：`explain select * from tb_user where profession like '%工程';`，前后都有 % 也会失效。
 4. 用 or 分割开的条件，如果 or 其中一个条件的列没有索引，那么涉及的索引都不会被用到。
 5. 如果 MySQL 评估使用索引比全表更慢，则不使用索引。
 #### SQL 提示
@@ -495,6 +515,7 @@ drop index idx_user_email on tb_user;
 必须使用哪个索引：
 `explain select * from tb_user force index(idx_user_pro) where profession="软件工程";`
 use 是建议，实际使用哪个索引 MySQL 还会自己权衡运行速度去更改，force就是无论如何都强制使用该索引。
+
 #### 覆盖索引&回表查询
 尽量使用覆盖索引（查询使用了索引，并且需要返回的列，在该索引中已经全部能找到），减少 select *。
 
@@ -508,9 +529,13 @@ use 是建议，实际使用哪个索引 MySQL 还会自己权衡运行速度去
    - 解：给username和password字段建立联合索引，则不需要回表查询，直接覆盖索引
 #### 前缀索引
 当字段类型为字符串（varchar, text等）时，有时候需要索引很长的字符串，这会让索引变得很大，查询时，浪费大量的磁盘IO，影响查询效率，此时可以只降字符串的一部分前缀，建立索引，这样可以大大节约索引空间，从而提高索引效率。
+
 语法：`create index idx_xxxx on table_name(columnn(n));`
+
 前缀长度：可以根据索引的选择性来决定，而选择性是指不重复的索引值（基数）和数据表的记录总数的比值，索引选择性越高则查询效率越高，唯一索引的选择性是1，这是最好的索引选择性，性能也是最好的。
+
 求选择性公式：
+
 ```sql
 select count(distinct email) / count(*) from tb_user;
 select count(distinct substring(email, 1, 5)) / count(*) from tb_user;
@@ -518,14 +543,17 @@ select count(distinct substring(email, 1, 5)) / count(*) from tb_user;
 show index 里面的sub_part可以看到截取的长度
 #### 单列索引&联合索引
 单列索引：即一个索引只包含单个列
+
 联合索引：即一个索引包含了多个列
+
 在业务场景中，如果存在多个查询条件，考虑针对于查询字段建立索引时，建议建立联合索引，而非单列索引。
+
 单列索引情况：
 `explain select id, phone, name from tb_user where phone = '17799990010' and name = '韩信';`
 这句只会用到phone索引字段
-##### 注意事项
 
-- 多条件联合查询时，MySQL优化器会评估哪个字段的索引效率更高，会选择该索引完成本次查询
+> 注意：多条件联合查询时，MySQL优化器会评估哪个字段的索引效率更高，会选择该索引完成本次查询
+
 ### 设计原则
 
 1. 针对于数据量较大，且查询比较频繁的表建立索引
@@ -555,7 +583,7 @@ commit;
 
 3.  主键顺序插入
 主键乱序插入 : 8 1 9 21 88 2 4 15 89 5 7 3 （性能低）
-主键顺序插入 : 1 2 3 4 5 7 8 9 15 21 88 89 （性能高） 
+主键顺序插入 : 1 2 3 4 5 7 8 9 15 21 88 89 （性能高）
 #### 大批量插入
 如果一次性需要插入大批量数据，使用insert语句插入性能较低，此时可以使用MySQL数据库提供的load指令插入。
 ```sql
@@ -575,7 +603,7 @@ load data local infile '/root/sql1.log' into table 'tb_user' fields terminated b
 行数据，都是存储在聚集索引的叶子节点上的。InnoDB的逻辑结构图：
 ![image.png](https://cdn.jsdelivr.net/gh/Okita1027/knowledge-database-images@main/database/mysql/sql02.png)
 InnoDB引擎中，数据行是记录在逻辑结构 page 页中的，而每一个页的大小是固定的，默认16K。
-那也就意味着， 一个页中所存储的行也是有限的，如果插入的数据行row在该页存储不小，将会存储到下一个页中，页与页之间会通过指针连接。
+也就意味着，一个页中所存储的行也是有限的，如果插入的数据行row在该页存储不小，将会存储到下一个页中，页与页之间会通过指针连接。
 
 #### 页分裂
 ![image.png](https://cdn.jsdelivr.net/gh/Okita1027/knowledge-database-images@main/database/mysql/sql03.png)![image.png](https://cdn.jsdelivr.net/gh/Okita1027/knowledge-database-images@main/database/mysql/sql04.png)
@@ -587,24 +615,27 @@ MERGE_THRESHOLD：合并页的阈值，可以自己设置，在创建表或者�
 
 #### 索引设计原则
 
--  满足业务需求的情况下，尽量降低主键的长度。 
--  插入数据时，尽量选择顺序插入，选择使用AUTO_INCREMENT自增主键。 
--  尽量不要使用UUID做主键或者是其他自然主键，如身份证号。 
--  业务操作时，避免对主键的修改。 
+-  满足业务需求的情况下，尽量降低主键的长度。
+-  插入数据时，尽量选择顺序插入，选择使用AUTO_INCREMENT自增主键。
+-  尽量不要使用UUID做主键或者是其他自然主键，如身份证号。
+-  业务操作时，避免对主键的修改。
 ### ORDER BY优化
 
 1. Using filesort：通过表的索引或全表扫描，读取满足条件的数据行，然后在排序缓冲区 sort buffer 中完成排序操作，所有不是通过索引直接返回排序结果的排序都叫 FileSort 排序
 2. Using index：通过有序索引顺序扫描直接返回有序数据，这种情况即为 using index，不需要额外排序，操作效率高
 3. backward index scan: 在MySQL中创建的索引，默认索引的叶子节点是从小到大排序的，而此时查询排序时，是从大到小，所以，在扫描时，就是反向扫描在MySQL8版本中，支持降序索引，可以创建降序索引。
 -  如果order by字段全部使用升序排序或者降序排序，则都会走索引，但是如果一个字段升序排序，另一个字段降序排序，则不会走索引 
--  explain的extra信息显示的是`Using index, Using filesort`，如果要优化掉Using filesort，则需要另外再创建一个索引， 
+-  explain的extra信息显示的是`Using index, Using filesort`，如果要优化掉Using filesort，则需要另外再创建一个索引 
    - 如：`create index idx_user_age_phone_ad on tb_user(age asc, phone desc);`
    - 此时使用`select id, age, phone from tb_user order by age asc, phone desc;`会全部走索引
--  排序时,也需要满足最左前缀法则,否则也会出现 filesort。因为在创建索引的时候， age是第一个字段，phone是第二个字段，所以排序时，也就该按照这个顺序来，否则就会出现 Using filesort。 
+-  排序时,也需要满足最左前缀法则,否则也会出现 filesort。因为在创建索引的时候，age是第一个字段，phone是第二个字段，所以排序时，也就该按照这个顺序来，否则就会出现 Using filesort。 
 ### limit优化
 常见的问题如`limit 2000000, 10`，此时需要 MySQL 排序前2000000条记录，但仅仅返回2000000-2000010的记录，其他记录丢弃，查询排序的代价非常大。
+
 优化方案：一般分页查询时，通过创建覆盖索引能够比较好地提高性能，可以通过覆盖索引加子查询形式进行优化。
+
 例如：
+
 ```sql
 -- 此语句耗时很长
 select * from tb_sku limit 9000000, 10;
@@ -616,14 +647,16 @@ select id from tb_sku order by id limit 9000000, 10;
 select * from tb_sku as s, (select id from tb_sku order by id limit 9000000, 10) as a where s.id = a.id;
 ```
 ### count优化
-MyISAM 引擎把一个表的总行数存在了磁盘上，因此执行 count(*) 的时候会直接返回这个数，效率很高（前提是不适用where）；
-InnoDB 在执行 count(*) 时，需要把数据一行一行地从引擎里面读出来，然后累计计数。
+MyISAM 引擎把一个表的总行数存在了磁盘上，因此执行 count(\*) 的时候会直接返回这个数，效率很高（前提是不适用where）；
+InnoDB 在执行 count(\*) 时，需要把数据一行一行地从引擎里面读出来，然后累计计数。
+
 优化方案：自己计数，如创建key-value表存储在内存或硬盘，或者是用redis
+
 count的几种用法：
 
 - 如果count函数的参数（count里面写的那个字段）不是NULL（字段值不为NULL），累计值就加一，最后返回累计值
 - 用法：count(*)、count(主键)、count(字段)、count(1)
-- count(主键)跟count(*)一样，因为主键不能为空；count(字段)只计算字段值不为NULL的行；count(1)引擎会为每行添加一个1，然后就count这个1，返回结果也跟count(*)一样；count(null)返回0
+- count(主键)跟count(\*)一样，因为主键不能为空；count(字段)只计算字段值不为NULL的行；count(1)引擎会为每行添加一个1，然后就count这个1，返回结果也跟count(\*)一样；count(null)返回0
 
 各种用法的性能：
 
@@ -632,23 +665,25 @@ count的几种用法：
 - count(1)：InnoDB 引擎遍历整张表，但不取值。服务层对于返回的每一层，放一个数字 1 进去，直接按行进行累加
 - count(*)：InnoDB 引擎并不会把全部字段取出来，而是专门做了优化，不取值，服务层直接按行进行累加
 
-按效率排序：count(字段) < count(主键) < count(1) ≈ count(*)，所以尽量使用 count(*)
+按效率排序：count(字段) < count(主键) < count(1) ≈ count(\*)，所以尽量使用 count(\*)
 ### update优化（避免行锁升级为表锁）
 InnoDB 的行锁是针对索引加的锁，不是针对记录加的锁，并且该索引不能失效，否则会从行锁升级为表锁。
 如以下两条语句：
 `update student set no = '123' where id = 1;`，这句由于id有主键索引，所以只会锁这一行；
 `update student set no = '123' where name = 'test';`这句由于name没有索引，所以会把整张表都锁住进行数据更新，解决方法是给name字段添加索引
+
 ## 锁
 ### 概述
-锁是计算机协调多个进程或线程并发访问某一资源的机制。在数据库中，除传统的计算资源（CPU、 RAM、I/O）的争用以外，数据也是一种供许多用户共享的资源。如何保证数据并发访问的一致性、有 效性是所有数据库必须解决的一个问题，锁冲突也是影响数据库并发访问性能的一个重要因素。从这个 角度来说，锁对数据库而言显得尤其重要，也更加复杂。 
-MySQL中的锁，按照锁的粒度分，分为以下三类： 
+锁是计算机协调多个进程或线程并发访问某一资源的机制。在数据库中，除传统的计算资源（CPU、 RAM、I/O）的争用以外，数据也是一种供许多用户共享的资源。如何保证数据并发访问的一致性、有效性是所有数据库必须解决的一个问题，锁冲突也是影响数据库并发访问性能的一个重要因素。从这个角度来说，锁对数据库而言显得尤其重要，也更加复杂。
 
-- 全局锁：锁定数据库中的所有表。 
-- 表级锁：每次操作锁住整张表。 
+MySQL中的锁，按照锁的粒度分，分为以下三类：
+
+- 全局锁：锁定数据库中的所有表。
+- 表级锁：每次操作锁住整张表。
 - 行级锁：每次操作锁住对应的行数据。
 ### 全局锁
 #### 概述
-全局锁就是对整个数据库实例加锁，加锁后整个实例就处于只读状态，后续的DML的写语句，DDL语 句，已经更新操作的事务提交语句都将被阻塞。 其典型的使用场景是做**全库的逻辑备份**，对所有的表进行锁定，从而获取一致性视图，保证数据的完整性。
+全局锁就是对整个数据库实例加锁，加锁后整个实例就处于只读状态，后续的DML的写语句，DDL语 句，已经更新操作的事务提交语句都将被阻塞。其典型的使用场景是做**全库的逻辑备份**，对所有的表进行锁定，从而获取一致性视图，保证数据的完整性。
 #### 语法
 
 1. 加全局锁
@@ -669,9 +704,9 @@ unlock tables;
 数据库中加全局锁，是一个比较重的操作，存在以下问题： 
 
 - 如果在主库上备份，那么在备份期间都不能执行更新，业务基本上就得停摆。 
-- 如果在从库上备份，那么在备份期间从库不能执行主库同步过来的二进制日志（binlog），会导 致主从延迟。
+- 如果在从库上备份，那么在备份期间从库不能执行主库同步过来的二进制日志（binlog），会导致主从延迟。
 
-在InnoDB引擎中，我们可以在备份时加上参数 `--single-transaction` 参数来完成不加锁的一致 性数据备份。
+在InnoDB引擎中，我们可以在备份时加上参数 `--single-transaction` 参数来完成不加锁的一致性数据备份。
 ```sql
 mysqldump --single-transaction -uroot –p123456 itcast > itcast.sql
 ```
@@ -679,30 +714,34 @@ mysqldump --single-transaction -uroot –p123456 itcast > itcast.sql
 表级锁，每次操作锁住整张表。锁定粒度大，发生锁冲突的概率最高，并发度最低。应用于MyISAM、 InnoDB、BDB等存储引擎中。 
 对于表级锁，主要分为以下三类： 
 
-- 表锁 
-- 元数据锁（meta data lock，MDL） 
+- 表锁
+- 元数据锁（meta data lock，MDL）
 - 意向锁
 #### 表锁
-对于表锁，分为两类： 
+对于表锁，分为两类：
 
 - 表共享读锁（read lock） -> 其它客户端只能读，不能写
 - 表独占写锁（write lock）-> 其它客户端不能读也不能写
 
-语法： 
+语法：
 
-- 加锁：lock tables 表名 read/write； 
+- 加锁：lock tables 表名 read/write；
 - 释放锁：unlock tables; 或者客户端断开连接
 #### 元数据锁
-meta data lock , 元数据锁，简写MDL。 
+meta data lock,元数据锁,简写MDL。
+
 MDL加锁过程是系统自动控制，无需显式使用，在访问一张表的时候会自动加上。MDL锁主要作用是维护表元数据的数据一致性，在表上有活动事务的时候，不可以对元数据进行写入操作。**为了避免DML与DDL冲突，保证读写的正确性**
-这里的元数据，可以简单理解为就是一张表的表结构。 也就是说，某一张表涉及到未提交的事务时，是不能够修改这张表的表结构的。 
-在MySQL5.5中引入了MDL，当对一张表进行增删改查的时候，加MDL读锁(共享)；当对表结构进行变更操作的时候，加MDL写锁(排他)。 
+
+这里的元数据，可以简单理解为就是一张表的表结构。也就是说，某一张表涉及到未提交的事务时，是不能够修改这张表的表结构的。
+
+在MySQL5.5中引入了MDL，当对一张表进行增删改查的时候，加MDL读锁(共享)；当对表结构进行变更操作的时候，加MDL写锁(排他)。
+
 常见的SQL操作时，所添加的元数据锁：
 ![image.png](https://cdn.jsdelivr.net/gh/Okita1027/knowledge-database-images@main/database/mysql/lock01.png)
 
 ```sql
 select object_type,object_schema,object_name,lock_type,lock_duration from
-performance_schema.metadata_locks ;
+performance_schema.metadata_locks;
 ```
 ![image.png](https://cdn.jsdelivr.net/gh/Okita1027/knowledge-database-images@main/database/mysql/lock02.png)
 > 总结：
@@ -710,11 +749,13 @@ performance_schema.metadata_locks ;
 
 #### 意向锁
 概述
+
 为了避免DML在执行时，加的行锁与表锁的冲突，在InnoDB中引入了意向锁，使得表锁不用检查每行数据是否加锁，使用意向锁来减少表锁的检查。
+
 分类
 
-- 意向共享锁(IS): 由语句select ... lock in share mode添加 。 与 表锁共享锁(read)兼容，与表锁排他锁(write)互斥。 
-- 意向排他锁(IX): 由insert、update、delete、select...for update添加 。与表锁共享锁(read)及排他锁(write)都互斥，意向锁之间不会互斥。 
+- 意向共享锁(IS): 由语句select ... lock in share mode添加。与表锁共享锁(read)兼容，与表锁排他锁(write)互斥。
+- 意向排他锁(IX): 由insert、update、delete、select...for update添加 。与表锁共享锁(read)及排他锁(write)都互斥，意向锁之间不会互斥。
 
 一旦事务提交了，意向共享锁、意向排他锁，都会自动释放。
 ```sql
@@ -723,28 +764,22 @@ performance_schema.data_locks;
 ```
 ### 行级锁
 #### 概述
-行级锁，每次操作锁住对应的行数据。锁定粒度最小，发生锁冲突的概率最低，并发度最高。应用在 InnoDB存储引擎中。 
+行级锁，每次操作锁住对应的行数据。锁定粒度最小，发生锁冲突的概率最低，并发度最高。应用在 InnoDB 存储引擎中。
 InnoDB的数据是基于索引组织的，行锁是通过对索引上的索引项加锁来实现的，而不是对记录加的 锁。对于行级锁，主要分为以下三类：
 
-- 行锁（Record Lock）：锁定单个行记录的锁，防止其他事务对此行进行update和delete。在 
+- 行锁（Record Lock）：锁定单个行记录的锁，防止其他事务对此行进行update和delete。在RC、RR隔离级别下都支持。
+  ![image.png](https://cdn.jsdelivr.net/gh/Okita1027/knowledge-database-images@main/database/mysql/lock03.png)
 
-RC、RR隔离级别下都支持。
-![image.png](https://cdn.jsdelivr.net/gh/Okita1027/knowledge-database-images@main/database/mysql/lock03.png)
+- 间隙锁（Gap Lock）：锁定索引记录间隙（不含该记录），确保索引记录间隙不变，防止其他事务在这个间隙进行insert，产生幻读。在RR隔离级别下都支持。
+  ![image.png](https://cdn.jsdelivr.net/gh/Okita1027/knowledge-database-images@main/database/mysql/lock04.png)
 
-- 间隙锁（Gap Lock）：锁定索引记录间隙（不含该记录），确保索引记录间隙不变，防止其他事 
-
-务在这个间隙进行insert，产生幻读。在RR隔离级别下都支持。
-![image.png](https://cdn.jsdelivr.net/gh/Okita1027/knowledge-database-images@main/database/mysql/lock04.png)
-
-- 临键锁（Next-Key Lock）：行锁和间隙锁组合，同时锁住数据，并锁住数据前面的间隙Gap。 
-
-在RR隔离级别下支持。
-![image.png](https://cdn.jsdelivr.net/gh/Okita1027/knowledge-database-images@main/database/mysql/lock05.png)
+- 临键锁（Next-Key Lock）：行锁和间隙锁组合，同时锁住数据，并锁住数据前面的间隙Gap。 在RR隔离级别下支持。
+  ![image.png](https://cdn.jsdelivr.net/gh/Okita1027/knowledge-database-images@main/database/mysql/lock05.png)
 
 #### 行锁
-InnoDB实现了以下两种类型的行锁： 
+InnoDB实现了以下两种类型的行锁：
 
-- 共享锁（S）：允许一个事务去读一行，阻止其他事务获得相同数据集的排它锁。 
+- 共享锁（S）：允许一个事务去读一行，阻止其他事务获得相同数据集的排它锁。
 - 排他锁（X）：允许获取排他锁的事务更新数据，阻止其他事务获得相同数据集的共享锁和排他锁。
 
 两种行锁的兼容情况如下:
@@ -754,21 +789,22 @@ InnoDB实现了以下两种类型的行锁：
 
 > 在MySQL8.0某个版本后，SELECT ... LOCK IN SHARE MODE 建议改为SELECT ... FOR SHARE
 > SELECT 一定要在手动加锁的情况下才能防止幻读。
-> 事务开启之后，读取数据的时候是使用的【临键锁】，根据索引而改变成不同的锁。 
+> 事务开启之后，读取数据的时候是使用的【临键锁】，根据索引而改变成不同的锁。
 
-默认情况下，InnoDB在 REPEATABLE READ事务隔离级别运行，InnoDB使用 next-key 锁（临键）进行搜索和索引扫描，以防止幻读。 
-针对唯一索引进行检索时，对已存在的记录进行等值匹配时，将会自动优化为行锁。 
+默认情况下，InnoDB在 REPEATABLE READ 事务隔离级别运行，InnoDB使用 next-key 锁（临键）进行搜索和索引扫描，以防止幻读。
+针对唯一索引进行检索时，对已存在的记录进行等值匹配时，将会自动优化为行锁。
 InnoDB的行锁是针对于索引加的锁，不通过索引条件检索数据，那么InnoDB将对表中的所有记录加锁，此时就会升级为表锁。
+
 ```sql
 select object_schema,object_name,index_name,lock_type,lock_mode,lock_data from
 performance_schema.data_locks;
 ```
 #### 间隙锁、临键锁
-默认情况下，InnoDB在 REPEATABLE READ事务隔离级别运行，InnoDB使用 next-key 锁进行搜索和索引扫描，以防止幻读。 
+默认情况下，InnoDB在 REPEATABLE READ事务隔离级别运行，InnoDB使用 next-key 锁进行搜索和索引扫描，以防止幻读。
 
-- 索引上的等值查询(唯一索引)，给不存在的记录加锁时, 优化为间隙锁 。 
+- 索引上的等值查询(唯一索引)，给不存在的记录加锁时, 优化为间隙锁。
    - 案例：此时有ID=1和ID=3的数据，客户端1开始事务，查询ID为2的数据，由于不存在ID=2的数据，此时1和3之间的空隙会有一把锁；客户端2插入ID=2的数据时会阻塞。
-- 索引上的等值查询(非唯一普通索引)，向右遍历时最后一个值不满足查询需求时，next-key lock 退化为间隙锁。 
+- 索引上的等值查询(非唯一普通索引)，向右遍历时最后一个值不满足查询需求时，next-key lock 退化为间隙锁。
    - 举个例子来说明，假设我们有一个学生表（student），表中有学生的学号（id）、姓名（name）和年龄（age）三个字段，我们为学号字段创建了一个非唯一普通索引。现在我们想要查找年龄大于等于 18 岁的学生信息，可以使用以下 SQL 语句：
 ```sql
 SELECT * FROM student WHERE id >= 100 AND age >= 18;
@@ -779,11 +815,8 @@ SELECT * FROM student WHERE id >= 100 AND age >= 18 FOR UPDATE;
 ```
 这样，MySQL 会在查询过程中对符合条件的记录加上 Next-Key Lock，确保它们不会被其他事务修改。但是，如果最后一个不满足查询条件的记录被锁定了，那么下一个满足条件的记录就无法被锁定，此时 MySQL 会将 Next-Key Lock 退化为 Gap Lock，即只锁定间隙而不是整个记录。
 
-   - InnoDB的B+树索引，叶子节点是有序的双向链表。 假如，我们要根据这个二级索引查询值 
-
-为18的数据，并加上共享锁，我们是只锁定18这一行就可以了吗？ 并不是，因为是非唯一索引，这个 
-结构中可能有多个18的存在，所以，在加锁时会继续往后找，找到一个不满足条件的值（当前案例中也就是29）。此时会对18加临键锁，并对29之前的间隙加锁。
-![image.png](https://cdn.jsdelivr.net/gh/Okita1027/knowledge-database-images@main/database/mysql/lock08.png)
+   - InnoDB的B+树索引，叶子节点是有序的双向链表。假如，我们要根据这个二级索引查询值为18的数据，并加上共享锁，我们是只锁定18这一行就可以了吗？ 并不是，因为是非唯一索引，这个结构中可能有多个18的存在，所以，在加锁时会继续往后找，找到一个不满足条件的值（当前案例中也就是29）。此时会对18加临键锁，并对29之前的间隙加锁。
+     ![image.png](https://cdn.jsdelivr.net/gh/Okita1027/knowledge-database-images@main/database/mysql/lock08.png)
 
 - 索引上的范围查询(唯一索引)--会访问到不满足条件的第一个值为止。
    - 举个例子来说明，假设我们有一个学生表（student），表中有学生的学号（id）、姓名（name）和年龄（age）三个字段，我们为学号字段创建了一个唯一索引。现在我们想要查找年龄在 18 到 20 岁之间的学生信息，可以使用以下 SQL 语句：

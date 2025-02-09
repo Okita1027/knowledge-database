@@ -2491,7 +2491,7 @@ app.mount('#app');
 ```
 ### 两个注意点
 
-1.  路由组件通常存放在`pages` 或 `views`文件夹，一般组件通常存放在`components`文件夹。 
+1.  路由组件通常存放在`pages`或`views`文件夹，一般组件通常存放在`components`文件夹。 
 2.  通过点击导航，视觉效果上“消失” 了的路由组件，默认是被**卸载**掉的，需要的时候再去**挂载**。 
 ### 路由器工作模式
 
@@ -2886,7 +2886,7 @@ defineProps(['id', 'title', 'content']);
 }
 ```
 ## 组件通信
-![image.png](https://cdn.jsdelivr.net/gh/Okita1027/knowledge-database-images@main/web/vue/202406171501692.png)
+![组件通信](https://cdn.jsdelivr.net/gh/Okita1027/knowledge-database-images@main/web/vue/202406171501692.png)
 ### props
 概述：`props`是使用频率最高的一种通信方式，常用于 ：**父 ↔ 子**。
 
@@ -3249,7 +3249,7 @@ export default defineComponent({
 	defineProps(['a','b','c','d','x','y','updateA'])
 </script>
 ```
-### $refs $parent
+### \$refs$parent
 
 1.  概述： 
    - `$refs`用于 ：**父→子。**
@@ -3385,8 +3385,9 @@ function inject<T>(
 2. 第二个参数是可选的，即在没有匹配到 key 时使用的默认值。
 3. 第二个参数也可以是一个工厂函数，用来返回某些创建起来比较复杂的值。在这种情况下，你必须将 true 作为第三个参数传入，表明这个函数将作为工厂函数使用，而非值本身。
 
-与注册生命周期钩子的 API 类似，`inject()`必须在组件的 `setup()`阶段同步调用。
+与注册生命周期钩子的 API 类似，`inject()`必须在组件的`setup()`阶段同步调用。
 当使用 TypeScript 时，key 可以是一个类型为 `InjectionKey`的 symbol。`InjectionKey`是一个 Vue 提供的工具类型，继承自 `Symbol`，可以用来同步 `provide()` 和 `inject()` 之间值的类型。
+
 #### 祖孙通信
 
 1.  概述：实现**祖孙组件**直接通信 
@@ -3441,7 +3442,7 @@ function inject<T>(
 <script setup lang="ts" name="GrandChild">
   import { inject } from 'vue';
   // 注入数据
- let {money,updateMoney} = inject('moneyContext',{money:0,updateMoney:(x:number)=>{}})
+  let {money,updateMoney} = inject('moneyContext',{money:0,updateMoney:(x:number)=>{}})
   let car = inject('car')
 </script>
 ```
@@ -3464,7 +3465,7 @@ import SubmitButton from './SubmitButton.vue'
 ```vue
 <template>
   <button type="submit">
-	  <slot>
+	<slot>
     	Submit <!-- fallback content -->
   	</slot>
 	</button>

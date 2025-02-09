@@ -726,7 +726,7 @@ private Address address;
 
 ### 索引创建
 
-<<<<<<< Updated upstream
+
 
 
 ## 审计
@@ -1009,8 +1009,6 @@ public class CursorTest {
 }
 ```
 
-
-
 ## 分片
 
 `@Sharded` 注解来标识存储在分片集合中的实体
@@ -1066,9 +1064,3 @@ adminDB.runCommand(shardCmd);
 > [!tip]
 >
 > 通过设置 `@Sharded(immutableKey = true)`，Spring Data 不会尝试检查实体 shard 键是否已更改。
-
-### 
-
-
-
-### 

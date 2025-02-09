@@ -16,14 +16,14 @@ order: 9
 
 ```java
 public interface MyInterface {
-    private void methodPrivate(){
+    private void methodPrivate() {
     }
 }
 ```
 
 ## try-with-resources
 
- `try-with-resources` 语句中可以使用 effectively-final 变量。
+`try-with-resources` 语句中可以使用 effectively-final 变量。
 
 被包裹的变量不需要在`finally`块中手动释放了。
 
@@ -88,9 +88,9 @@ public class Main {
 允许在声明局部变量时使用 var 关键字来推断变量的类型。这种方式可以使代码更加简洁、易读，并且不会损失类型安全性。
 
 - **类型名`var`：** 可以在声明局部变量时使用 var 关键字，编译器会根据初始化表达式推断变量的类型。
-- **适用范围：** 局部变量类型推断适用于声明局部变量，包括方法内的局部变量、for 循环中的计数器、foreach 循环中的迭代变量、Lambda 表达式。
-- **推断规则：** 编译器会根据初始化表达式推断变量的类型，推断的类型会根据初始化表达式的类型来确定。
-- **不影响代码的类型安全性：** 局部变量类型推断不会影响代码的类型安全性，因为变量的类型是由编译器在编译时确定的。
+- **适用范围：**局部变量类型推断适用于声明局部变量，包括方法内的局部变量、for 循环中的计数器、foreach 循环中的迭代变量、Lambda 表达式。
+- **推断规则：**编译器会根据初始化表达式推断变量的类型，推断的类型会根据初始化表达式的类型来确定。
+- **不影响代码的类型安全性：**局部变量类型推断不会影响代码的类型安全性，因为变量的类型是由编译器在编译时确定的。
 
 ```java
 var list = new ArrayList<String>(); // 推断出 ArrayList<String> 类型
@@ -310,3 +310,68 @@ public class Square extends Rectangle {
 }
 ```
 
+## 虚拟线程
+
+**轻量级：**
+
+- **资源消耗极低**：虚拟线程的栈内存按需分配，且线程创建和切换成本极低（无需操作系统调度）。
+- **支持海量并发**：理论上可创建数百万个虚拟线程（传统线程通常受限于操作系统，最多数千个）。
+
+**与平台线程（Platform Threads）的关系：**
+
+- **绑定到平台线程执行**：虚拟线程由 JVM 调度到少量平台线程（即操作系统线程）上运行。
+- **非 1:1 映射**：多个虚拟线程可复用一个平台线程（类似协程的“多对多”模型）。
+
+**阻塞无代价：**
+
+- 虚拟线程在 I/O 或锁等待时会被自动挂起（`yield`），释放底层平台线程去执行其他虚拟线程，**避免线程阻塞导致的资源浪费**。
+
+---
+
+
+|   **特性**   |        **虚拟线程**        |       **平台线程**       |
+| :----------: | :------------------------: | :----------------------: |
+| **资源占用** |     轻量（KB 级内存）      |    重量（MB 级内存）     |
+| **创建数量** |          数百万级          | 数千级（受操作系统限制） |
+| **调度管理** |          JVM 管理          |     操作系统内核调度     |
+| **阻塞成本** |    无（自动挂起并切换）    |  高（上下文切换开销大）  |
+| **适用场景** | I/O 密集型、高并发阻塞任务 |  CPU 密集型、低并发任务  |
+
+---
+
+**使用方法：**
+
+1. 通过 `Thread.startVirtualThread()`
+
+```java
+Thread thread = Thread.startVirtualThread(() -> {
+    System.out.println("Running in virtual thread");
+});
+```
+
+2. 使用 `Thread.Builder`
+
+```java
+Thread.Builder builder = Thread.ofVirtual().name("virtual-thread-", 1);
+Thread vt = builder.start(() -> { /* Task */ });
+```
+
+3. 使用虚拟线程池（推荐）
+
+```java
+ExecutorService executor = Executors.newVirtualThreadPerTaskExecutor();
+executor.submit(() -> { /* Task */ });
+```
+
+---
+
+**注意事项：**
+
+1. **避免在虚拟线程中执行 CPU 密集型任务**
+   虚拟线程的目标是优化阻塞操作，CPU 密集型任务仍应使用平台线程池（如 `Executors.newFixedThreadPool()`）。
+2. **谨慎使用 `ThreadLocal`**
+   虚拟线程的轻量级特性可能导致 `ThreadLocal` 内存泄漏（需确保及时清理）。
+3. **与 `synchronized` 的兼容性**
+   虚拟线程在 `synchronized` 块内阻塞时，会同时阻塞底层平台线程。建议改用 `ReentrantLock` 以支持更灵活的挂起机制。
+4. **Native 方法与 JNI 调用**
+   虚拟线程在执行本地方法（Native Method）时无法挂起，可能导致平台线程被占用。

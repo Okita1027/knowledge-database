@@ -61,8 +61,6 @@ docker run -d --network=my_bridge_network --name container_name image_name
 
 当创建一个 Docker 容器的时候，同时会创建了一对 `veth pair` 接口（当数据包发送到一个接口时，另外一个接口也可以收到相同的数据包）。这对接口一端在容器内，即 `eth0`；另一端在本地并被挂载到 `docker0` 网桥，名称以 `veth` 开头（例如 `vethAQI2QT`）。通过这种方式，主机可以跟容器通信，容器之间也可以相互通信。Docker 就创建了在主机和所有容器之间一个虚拟共享网络。
 
-![bridge模式原理](https://gcore.jsdelivr.net/gh/Okita1027/knowledge-database-images@main/frame/docker/202410310848019.png)
-
 #### host
 
 **特点**：
@@ -499,11 +497,11 @@ docker-compose -p customproject up
 
 #### 后启动钩子
 
-Post-start 钩子是在容器启动后运行的命令，但没有 设置执行时间。在 执行容器的 .`entrypoint`
+Post-start 钩子是在容器启动后运行的命令，但没有设置执行时间。
 
 在提供的示例中：
 
-- 该钩子用于将卷的所有权更改为非 root 用户（因为卷 默认使用 root 所有权创建）。
+- 该钩子用于将卷的所有权更改为非 root 用户（因为卷默认使用 root 所有权创建）。
 - 容器启动后，该命令将目录的所有权更改为 user 。`chown` `/data` `1001`
 
 ```yml
@@ -523,7 +521,7 @@ volumes:
 
 #### 预停止钩子
 
-预停止钩子是在容器被特定 命令（如或使用 手动停止它）。 如果容器自行停止或突然被杀死，这些钩子将不会运行。`docker compose down` `Ctrl+C`
+预停止钩子是在容器被特定命令（如`docker compose down`或使用`Ctrl+C`手动停止它）。 如果容器自行停止或突然被杀死，这些钩子将不会运行。
 
 在以下示例中，在容器停止之前，脚本为 run 执行任何必要的清理。`./data_flush.sh`
 
@@ -1359,7 +1357,7 @@ Compose不会尝试创建一个名为 `[projectname]_default的网络`，而是�
 
 #### Merge
 
-默认情况下，Compose 会读取两个文件，一个`compose.yaml`和可选 `compose.override.yaml`文件。按照惯例，`compose.yaml` 包含您的基本配置。覆盖文件可以包含现有服务或全新服务的配置覆盖。
+默认情况下，Compose 会读取两个文件，一个`compose.yaml`和可选`compose.override.yaml`文件。按照惯例，`compose.yaml` 包含您的基本配置。覆盖文件可以包含现有服务或全新服务的配置覆盖。
 
 如果两个文件中都定义了一个服务，Compose 将使用下面描述的规则和 [Compose 规范](https://docs.docker.com/reference/compose-file/merge/)中描述的规则合并配置。
 

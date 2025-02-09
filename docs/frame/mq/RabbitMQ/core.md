@@ -18,6 +18,7 @@ tags: [RabbitMQ]
 我们之前学习的Feign调用就属于同步方式，虽然调用可以实时得到结果，但存在下面的问题：
 ![image.png](https://gcore.jsdelivr.net/gh/Okita1027/knowledge-database-images@main/frame/mq/rabbitmq/202406171543575.png)
 总结：
+
 同步调用的优点：
 
 - 时效性较强，可以立即得到结果
@@ -35,14 +36,15 @@ tags: [RabbitMQ]
 订单服务和物流服务是事件订阅者（Consumer），订阅支付成功的事件，监听到事件后完成自己业务即可。
 为了解除事件发布者与订阅者之间的耦合，两者并不是直接通信，而是有一个中间人（Broker）。发布者发布事件到Broker，不关心谁来订阅事件。订阅者从Broker订阅事件，不关心谁发来的消息。
 ![image.png](https://gcore.jsdelivr.net/gh/Okita1027/knowledge-database-images@main/frame/mq/rabbitmq/202406171543316.png)
-Broker 是一个像数据总线一样的东西，所有的服务要接收数据和发送数据都发到这个总线上，这个总线就像协议一样，让服务间的通讯变得标准和可控。
+Broker是一个像数据总线一样的东西，所有的服务要接收数据和发送数据都发到这个总线上，这个总线就像协议一样，让服务间的通讯变得标准和可控。
+
 好处：
 
--  吞吐量提升：无需等待订阅者处理完成，响应更快速 
--  故障隔离：服务没有直接调用，不存在级联失败问题 
--  调用间没有阻塞，不会造成无效的资源占用 
--  耦合度极低，每个服务都可以灵活插拔，可替换 
--  流量削峰：不管发布事件的流量波动多大，都由Broker接收，订阅者可以按照自己的速度去处理事件 
+-  吞吐量提升：无需等待订阅者处理完成，响应更快速
+-  故障隔离：服务没有直接调用，不存在级联失败问题
+-  调用间没有阻塞，不会造成无效的资源占用
+-  耦合度极低，每个服务都可以灵活插拔，可替换
+-  流量削峰：不管发布事件的流量波动多大，都由Broker接收，订阅者可以按照自己的速度去处理事件
 
 缺点：
 
@@ -71,10 +73,11 @@ MQ，中文是消息队列（MessageQueue），字面来看就是存放消息的
 | 消息延迟 | 微秒级 | 毫秒级 | 毫秒级 | 毫秒以内 |
 | 消息可靠性 | 高 | 一般 | 高 | 一般 |
 
-追求可用性：Kafka、 RocketMQ 、RabbitMQ
+追求可用性：Kafka、RocketMQ、RabbitMQ
 追求可靠性：RabbitMQ、RocketMQ
 追求吞吐能力：RocketMQ、Kafka
 追求消息低延迟：RabbitMQ、Kafka
+
 ## 2.快速上手
 ### 2.1.安装RabbitMQ
 MQ的基本结构：
@@ -138,7 +141,6 @@ public class PublisherTest {
         // 5.关闭通道和连接
         channel.close();
         connection.close();
-
     }
 }
 ```
@@ -521,6 +523,7 @@ Work queues，也被称为（Task queues），任务模型。简单来说就是*
 #### 3.2.1.消息发送
 这次我们循环发送，模拟大量消息堆积现象。
 在publisher服务中的SpringAmqpTest类中添加一个测试方法：
+
 ```java
 /**
  * workQueue
@@ -700,19 +703,20 @@ public void listenFanoutQueue2(String msg) {
 在Direct模型下：
 
 - 队列与交换机的绑定，不能是任意绑定了，而是要指定一个`RoutingKey`（路由key）
-- 消息的发送方在 向 Exchange发送消息时，也必须指定消息的 `RoutingKey`。
+- 消息的发送方在向 Exchange发送消息时，也必须指定消息的 `RoutingKey`
 - Exchange不再把消息交给每一个绑定的队列，而是根据消息的`Routing Key`进行判断，只有队列的`Routingkey`与消息的 `Routing key`完全一致，才会接收到消息
 
 **案例需求如下**：
 
-1.  利用@RabbitListener声明Exchange、Queue、RoutingKey 
-2.  在consumer服务中，编写两个消费者方法，分别监听direct.queue1和direct.queue2 
-3.  在publisher中编写测试方法，向itcast. direct发送消息 
+1.  利用`@RabbitListener`声明Exchange、Queue、RoutingKey
+2.  在consumer服务中，编写两个消费者方法，分别监听direct.queue1和direct.queue2
+3.  在publisher中编写测试方法，向itcast.direct发送消息
 
 ![image.png](https://gcore.jsdelivr.net/gh/Okita1027/knowledge-database-images@main/frame/mq/rabbitmq/202406171601959.png)
 #### 3.5.1.基于注解声明队列和交换机
-基于@Bean的方式声明队列和交换机比较麻烦，Spring还提供了基于注解方式来声明。
+基于`@Bean`的方式声明队列和交换机比较麻烦，Spring还提供了基于注解方式来声明。
 在consumer的SpringRabbitListener中添加两个消费者，同时基于注解来声明队列和交换机：
+
 ```java
 @RabbitListener(bindings = @QueueBinding(
     value = @Queue(name = "direct.queue1"),
@@ -759,13 +763,19 @@ public void testDirectExchange() {
 ### 3.6.Topic
 #### 3.6.1.说明
 `Topic`类型的`Exchange`与`Direct`相比，都是可以根据`RoutingKey`把消息路由到不同的队列。只不过`Topic`类型`Exchange`可以让队列在绑定`Routing key` 的时候使用通配符！
-`Routingkey` 一般都是有一个或多个单词组成，多个单词之间以”.”分割，例如： `item.insert`
+
+`Routingkey` 一般都是有一个或多个单词组成，多个单词之间以”.”分割，例如：`item.insert`
+
 通配符规则：
-`#`：匹配一个或多个词
-`*`：匹配不多不少恰好1个词
+
+- `#`：匹配一个或多个词
+- `*`：匹配不多不少恰好1个词
+
 举例：
-`item.#`：能够匹配`item.spu.insert` 或者 `item.spu`
-`item.*`：只能匹配`item.spu`
+
+- `item.#`：能够匹配`item.spu.insert` 或者 `item.spu`
+- `item.*`：只能匹配`item.spu`
+
 图示：
 ![image.png](https://gcore.jsdelivr.net/gh/Okita1027/knowledge-database-images@main/frame/mq/rabbitmq/202406171601597.png)
 解释：
@@ -1442,6 +1452,7 @@ UPDATE `order` SET status = ? , pay_time = ? WHERE id = ? AND status = 1
 - 要投递的队列消息满了，无法投递
 
 如果一个队列中的消息已经成为死信，并且这个队列通过**dead-letter-exchange**属性指定了一个交换机，那么队列中的死信就会投递到这个交换机中，而这个交换机就称为**死信交换机**（Dead Letter Exchange）。而此时加入有队列与死信交换机绑定，则最终死信就会被投递到这个队列中。
+
 死信交换机有什么作用呢？
 
 1. 收集那些因处理失败而被拒绝的消息
@@ -1467,6 +1478,7 @@ UPDATE `order` SET status = ? , pay_time = ? WHERE id = ? AND status = 1
 **注意：**
 RabbitMQ的消息过期是基于追溯方式来实现的，也就是说当一个消息的TTL到期以后不一定会被移除或投递到死信交换机，而是在消息恰好处于队首时才会被处理。
 当队列中消息堆积很多的时候，过期消息可能不会被按时处理，因此你设置的TTL时间不一定准确。
+
 ### DelayExchange插件
 基于死信队列虽然可以实现延迟消息，但是太麻烦了。因此RabbitMQ社区提供了一个延迟消息插件来实现相同的效果。
 官方文档说明：
@@ -1565,4 +1577,5 @@ void testPublisherDelayMessage() {
 ```
 **注意：**
 延迟消息插件内部会维护一个本地数据库表，同时使用Elang Timers功能实现计时。如果消息的延迟时间设置较长，可能会导致堆积的延迟消息非常多，会带来较大的CPU开销，同时延迟消息的时间会存在误差。
+
 因此，**不建议设置延迟时间过长的延迟消息**。

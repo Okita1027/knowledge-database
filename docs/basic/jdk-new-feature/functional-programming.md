@@ -91,7 +91,7 @@ static List<Student> filter(List<Student> students) {
 
 既然只有判断逻辑不同，能否把它作为参数传递进来，这样处理起来不就一致了吗？
 
-```java{1,4}
+```java
 static List<Student> filter(List<Student> students, ???) {
     List<Student> result = new ArrayList<>();
     for (Student student : students) {
@@ -113,7 +113,7 @@ interface StudentFilterLambda {
 
 `filter`方法可以统一成下述代码
 
-```java{1,4}
+```java
 static List<Student> filter(List<Student> students, StudentFilterLambda lambda) {
     List<Student> result = new ArrayList<>();
     for (Student student : students) {
@@ -467,9 +467,9 @@ public class Type6Test {
     public static void main(String[] args) {
         Util util = new UtilExt();
         util.hiOrder(Stream.of(
-                new Student("张无忌", "男"),
-                new Student("周芷若", "女"),
-                new Student("宋青书", "男")
+            new Student("张无忌", "男"),
+            new Student("周芷若", "女"),
+            new Student("宋青书", "男")
         ));
     }
 
@@ -488,8 +488,8 @@ public class Type6Test {
 
         void hiOrder(Stream<Student> stream) {
             stream
-                    .filter(this::isMale)
-                    .forEach(System.out::println);
+                .filter(this::isMale)
+                .forEach(System.out::println);
         }
     }
 }
@@ -501,14 +501,14 @@ public class Type6Test {
 
 ```java
 public class Type6Test {
-    
+
     //...
-    
+
     static class UtilExt extends Util {
         void hiOrder(Stream<Student> stream) {
             stream
-                    .filter(super::isFemale)
-                    .forEach(System.out::println);
+                .filter(super::isFemale)
+                .forEach(System.out::println);
         }
     }
 }
@@ -715,8 +715,6 @@ public class CurryingTest3 {
 案例：
 
 ```java
-import java.util.function.IntBinaryOperator;
-
 public class Main {
     public static int operateOnNumbers(int a, int b, IntBinaryOperator operator) {
         return operator.applyAsInt(a, b);

@@ -201,11 +201,11 @@ public class Interrupt_
 ```
 ### 礼让与插队
 
-- join()方法：
+- `join()`方法：
 
  join()方法是Thread类的一个方法，用于等待当前线程所加入的线程执行完毕(让别的线程先执行完)。调用join()方法的线程会被阻塞，直到被加入的线程执行完毕。例如，如果线程A调用了线程B的join()方法，那么线程A会等待线程B执行完毕后再继续执行。
 
-- yield()方法：
+- `yield()`方法：
 
  yield()方法是Thread类的一个静态方法，用于暂停当前正在执行的线程，并允许其他具有相同优先级的线程运行。调用yield()方法后，当前线程会让出CPU资源，但是不会释放锁资源。调用yield()方法后，当前线程会重新进入就绪状态，然后与其他线程竞争CPU资源。
 ```java
@@ -383,6 +383,7 @@ LockSupport工具类提供了更灵活的线程阻塞和唤醒机制，相比于
 
 使用`LockSupport`的`park()`方法打断线程执行
 park过后，无法再次park，必须在二者之间使用Thread.interrupted()重置打断状态
+
 ```java
 public class Park {
     private static Logger logger = Logger.getLogger("Park");
@@ -459,7 +460,7 @@ synchronized实现同步的基础:Java中的每一个对象都可以作为锁。
 
 - 对于普通同步方法，锁是当前实例对象。
 - 对于静态同步方法，锁是当前类的class对象。
-- 对于同步方法块，锁是synchonized括号里配置的对象。
+- 对于同步代码块，锁是synchonized括号里配置的对象。
 > 注意：线程同步会使程序效率变低，就算要实现同步，也应尽量使用 同步代码块 的方式而非 同步方法
 
 #### Lock接口
@@ -1209,6 +1210,7 @@ JUC 中提供了三种常用的辅助类，通过这些辅助类可以很好的�
 • CountDownLatch: 减少计数
 • CyclicBarrier: 循环栅栏
 • Semaphore: 信号灯
+
 ### 减少计数 CountDownLatch
 CountDownLatch 是一种同步工具，允许一个或多个线程等待一组事件的发生。它可以用于线程之间的协调和通信，比如主线程等待所有子线程完成任务后再继续执行。
 
@@ -1268,7 +1270,7 @@ public class CyclicBarrierDemo {
         }
     }
 ```
-```latex
+```txt
 Thread is waiting at the barrier -> 已收集7星龙珠……
 Thread is waiting at the barrier -> 已收集1星龙珠……
 Thread is waiting at the barrier -> 已收集6星龙珠……
@@ -1382,6 +1384,7 @@ LinkedBlockingQueue 之所以能够高效的处理并发数据，还因为其对
 #### DelayQueue
 DelayQueue 内部使用 PriorityQueue 来存储元素，并且要求元素必须实现 Delayed 接口。Delayed 接口中定义了两个方法：getDelay(TimeUnit unit) 和 compareTo(Delayed other)。getDelay() 方法返回剩余的延迟时间，而 compareTo() 方法用于元素之间的比较。
 DelayQueue 中的元素只有当其指定的延迟时间到了，才能够从队列中获取到 该元素。DelayQueue 是一个没有大小限制的队列，因此往队列中插入数据的 操作（生产者）永远不会被阻塞，而只有获取数据的操作（消费者）才会被阻塞。
+
 ```java
 public class DelayQueueDemo {
     public static void main(String[] args) throws InterruptedException {
@@ -1442,6 +1445,7 @@ public class DelayQueueDemo {
 #### PriorityBlockingQueue
 基于优先级的阻塞队列（优先级的判断通过构造函数传入的 Compator 对象来决定），但需要注意的是 PriorityBlockingQueue 不会阻塞数据生产者，只会在没有可消费的数据时，阻塞数据的消费者。 因此使用的时候要特别注意，生产者生产数据的速度绝对不能快于消费者消费数据的速度，否则时间一长，会最终耗尽所有的可用堆内存空间。
 在实现 PriorityBlockingQueue 时，内部控制线程同步的锁采用的是公平锁。
+
 ```java
 public class PriorityBlockingQueueDemo {
     public static void main(String[] args) throws InterruptedException {
@@ -1529,6 +1533,7 @@ public class SynchronousQueueDemo {
 #### LinkedBlockingDeque
 LinkedBlockingDeque 是 Java 并发包中的一个特殊类型的双向阻塞队列，同时具有队列和栈的功能。
 LinkedBlockingDeque 内部使用链表来存储元素，可以在队列的两端进行插入和删除操作。它是线程安全的，支持多个线程同时对队列进行操作，并且提供了阻塞和非阻塞的插入和删除方法。
+
 ```java
 import java.util.concurrent.LinkedBlockingDeque;
 
@@ -1582,9 +1587,9 @@ public class LinkedBlockingDequeDemo {
 一般来说实现一个线程池主要包括以下几个组成部分：
 
 - 线程管理器 ：用于创建并管理线程池 。
-- 工作线程 ：线程池中实际执行任务的线程 。 在初始化线程时会预先创建好固定数目的线程在池中 ，这些初始化的线程一般是处于空闲状态 ，不消耗CPU，占用较小的内存空间 。
-- 任务接口 ：每个任务必须实现的接口 ，当线程池中的可执行的任务时 ，被工作线程调试执行。 把任务抽象出来形成任务接口 ，可以做到线程池与具体的任务无关 。
-- 任务队列 ：用来存放没有处理的任务，提 供一种缓冲机制。 实现这种结构有好几种方法 ，常用的是队列 ，主要是利用它先进先出的工作原理；另外一种是链表之类的数据结构 ，可以动态为它分配内存空间 ，应用中比较灵活
+- 工作线程 ：线程池中实际执行任务的线程。在初始化线程时会预先创建好固定数目的线程在池中，这些初始化的线程一般是处于空闲状态，不消耗CPU，占用较小的内存空间 。
+- 任务接口 ：每个任务必须实现的接口，当线程池中有可执行的任务时，被工作线程调试执行。把任务抽象出来形成任务接口，可以做到线程池与具体的任务无关。
+- 任务队列：用来存放没有处理的任务，提供一种缓冲机制。实现这种结构有好几种方法，常用的是队列，主要是利用它先进先出的工作原理；另外一种是链表之类的数据结构，可以动态为它分配内存空间，应用中比较灵活。
 ### 线程池种类与创建
 #### newCachedThreadPool(常用)
 
@@ -1598,11 +1603,11 @@ public class LinkedBlockingDequeDemo {
    - 当线程池中，没有可用线程，会重新创建一个线程 
 - 创建方式
 ```java
-/
+/*
 * 可缓存线程池
 */
 public static ExecutorService newCachedThreadPool(){
-    /
+    /*
     * corePoolSize 线程池的核心线程数
     * maximumPoolSize 能容纳的最大线程数
     * keepAliveTime 空闲线程存活时间
@@ -1638,11 +1643,11 @@ public static ExecutorService newCachedThreadPool(){
    - 超出一定量的线程被提交时候需在队列中等待 
 - 创建方式
 ```java
-/
+/*
 * 固定长度线程池
 */
 public static ExecutorService newFixedThreadPool(){
-    /
+    /*
     * corePoolSize 线程池的核心线程数
     * maximumPoolSize 能容纳的最大线程数
     * keepAliveTime 空闲线程存活时间
@@ -1678,11 +1683,11 @@ public static ExecutorService newFixedThreadPool(){
 
 - 创建方式
 ```java
-/
+/*
 * 单一线程池
 */
 public static ExecutorService newSingleThreadExecutor(){
-    /
+    /*
     * corePoolSize 线程池的核心线程数
     * maximumPoolSize 能容纳的最大线程数
     * keepAliveTime 空闲线程存活时间
@@ -1730,7 +1735,7 @@ public static ScheduledExecutorService newScheduledThreadPool(int corePoolSize,
 
 - 概述
 
-JDK1.8 提供的线程池，底层使用的是 ForkJoinPool 实现，创建一个拥有多个任务队列的线程池，可以减少连接数，创建当前可用 cpu 核数的线程来并行执行任务 
+JDK1.8 提供的线程池，底层使用的是 ForkJoinPool 实现，创建一个拥有多个任务队列的线程池，可以减少连接数，创建当前可用 cpu 核数的线程来并行执行任务
 WorkStealingPool 是一种基于工作窃取算法（work-stealing algorithm）的线程池。在 WorkStealingPool 中，每个线程都有自己的任务队列，当一个线程完成了自己队列中的任务后，它可以去其他线程的队列中窃取任务来执行，从而实现了负载均衡和高效利用线程的特性。
 
 - 创建方式
@@ -1765,7 +1770,7 @@ ThreadPoolExecutor executor = new ThreadPoolExecutor(
 ```
 #### 注意事项
 
-1. 项目中创建多线程时，使用常见的三种线程池创建方式，单一、可变、定长都有一定问题，原因是 FixedThreadPool 和 SingleThreadExecutor 底层都是用LinkedBlockingQueue 实现的，这个队列最大长度为 Integer.MAX_VALUE，容易导致 OOM。所以实际生产一般自己通过 ThreadPoolExecutor 的 7 个参数，自定义线程池
+1. 项目中创建多线程时，使用常见的三种线程池创建方式，单一、可变、定长都有一定问题，原因是 FixedThreadPool 和 SingleThreadExecutor 底层都是用LinkedBlockingQueue 实现的，这个队列最大长度为 Integer.MAX_VALUE，容易导致OOM。所以实际生产一般自己通过 ThreadPoolExecutor 的 7 个参数，自定义线程池
 2. 创建线程池推荐适用 ThreadPoolExecutor 及其 7 个参数手动创建
 corePoolSize 线程池的核心线程数
 maximumPoolSize 能容纳的最大线程数
@@ -1776,27 +1781,28 @@ threadFactory 创建线程的工厂类
 handler 等待队列满后的拒绝策略
 ### 参数说明
 #### 常用参数(重点)
-• corePoolSize 线程池的核心线程数 
-• maximumPoolSize 能容纳的最大线程数 
-• keepAliveTime 空闲线程存活时间 
-• unit 存活的时间单位 
-• workQueue 存放提交但未执行任务的队列 
-• threadFactory 创建线程的工厂类 
+• corePoolSize 线程池的核心线程数
+• maximumPoolSize 能容纳的最大线程数
+• keepAliveTime 空闲线程存活时间
+• unit 存活的时间单位
+• workQueue 存放提交但未执行任务的队列
+• threadFactory 创建线程的工厂类
 • handler 等待队列满后的拒绝策略
-其中：corePoolSize - 核心线程数，也即最小的线程数。workQueue - 阻塞队列 。maximumPoolSize - 最大线程数 ，这三个参数的决定会影响拒绝策略。
+其中：corePoolSize——核心线程数，也即最小的线程数。workQueue——阻塞队列 。maximumPoolSize——最大线程数，这三个参数的决定会影响拒绝策略。
 当提交任务数大于 corePoolSize 的时候，会优先将任务放到 workQueue 阻塞队列中。当阻塞队列饱和后，会扩充线程池中线程数，直到达到maximumPoolSize 最大线程数配置。此时，再多余的任务，则会触发线程池的拒绝策略了。 
 总结：当提交的任务数大于（workQueue.size() + maximumPoolSize ），会触发线程池的拒绝策略。
+
 #### 拒绝策略(重点)
 ![image.png](https://gcore.jsdelivr.net/gh/Okita1027/knowledge-database-images@main/basic/JUC/3.png)
 
-- CallerRunsPolicy: 当触发拒绝策略，只要线程池没有关闭的话，则使用调用线程直接运行任务。一般并发比较小，性能要求不高，不允许失败。但是，由于调用者自己运行任务，如果任务提交速度过快，可能导致程序阻塞，性能效率上必然的损失较大 。
-- AbortPolicy: 丢弃任务，并抛出拒绝执行 RejectedExecutionException 异常信息。线程池默认的拒绝策略。必须处理好抛出的异常，否则会打断当前的执行流程，影响后续的任务执行。 
-- DiscardPolicy: 直接丢弃，其他啥都没有 。
+- CallerRunsPolicy: 当触发拒绝策略，只要线程池没有关闭的话，则使用调用线程直接运行任务。一般并发比较小，性能要求不高，不允许失败。但是，由于调用者自己运行任务，如果任务提交速度过快，可能导致程序阻塞，性能效率上必然的损失较大。
+- AbortPolicy: 丢弃任务，并抛出拒绝执行 RejectedExecutionException 异常信息。线程池默认的拒绝策略。必须处理好抛出的异常，否则会打断当前的执行流程，影响后续的任务执行。
+- DiscardPolicy: 直接丢弃，其他啥都没有。
 - DiscardOldestPolicy: 当触发拒绝策略，只要线程池没有关闭的话，丢弃阻塞队列 workQueue 中最老的一个任务，并将新任务加入。
 ### 工作原理
 
 1. 在创建了线程池后，线程池中的线程数为零
-2. 当调用 execute()方法添加一个请求任务时，线程池会做出如下判断： 
+2. 当调用 execute()方法添加一个请求任务时，线程池会做出如下判断：
    1. 如果正在运行的线程数量小于 corePoolSize，那么马上创建线程运行这个任务；
    2. 如果正在运行的线程数量大于或等于 corePoolSize，那么将这个任务放入队列； 
    3. 如果这个时候队列满了且正在运行的线程数量还小于maximumPoolSize，那么还是要创建非核心线程立刻运行这个任务
@@ -1809,6 +1815,7 @@ handler 等待队列满后的拒绝策略
 ### 介绍
 Fork/Join框架是Java多线程编程中的一个并行计算框架，用于解决分而治之（divide and conquer）的问题。它是基于工作窃取（work-stealing）算法的一种实现。
 Fork/Join框架的核心思想是将一个大任务划分为多个小任务，并行地执行这些小任务，最后将结果合并得到最终的结果。该框架使用了递归算法，将任务不断地拆分成更小的子任务，直到达到某个可以被直接计算的最小任务粒度。
+
 ### 实现
 #### 执行流程
 
@@ -1828,7 +1835,7 @@ Fork/Join框架的核心思想是将一个大任务划分为多个小任务，�
 ---
 
 #### 实现原理
-ForkJoinPool 由 ForkJoinTask 数组和 ForkJoinWorkerThread 数组组成， ForkJoinTask 数组负责将存放以及将程序提交给 ForkJoinPool，而 ForkJoinWorkerThread 负责执行这些任务。
+ForkJoinPool 由 ForkJoinTask 数组和 ForkJoinWorkerThread 数组组成，ForkJoinTask 数组负责将存放以及将程序提交给 ForkJoinPool，而 ForkJoinWorkerThread 负责执行这些任务。
 
 - fork方法
 
@@ -1853,22 +1860,35 @@ CompletableFuture 实现了 Future, CompletionStage 接口，实现了 Future �
 3. 对异步任务的结果进行转换、处理错误和异常情况。
 4. 可以轻松地实现串行和并行执行异步任务。
 ### Future回顾
-Futrue 在 Java 里面，通常用来表示一个异步任务的引用，比如我们将任务提交到线程池里面，然后我们会得到一个 Futrue，在 Future 里面有 isDone 方法来 判断任务是否处理结束，还有 get 方法可以一直阻塞直到任务结束然后获取结果，但整体来说这种方式，还是同步的，因为需要客户端不断阻塞等待或者不断轮询才能知道任务是否完成。
-Future 的主要缺点
+Futrue 在 Java 里面，通常用来表示一个异步任务的引用，比如我们将任务提交到线程池里面，然后我们会得到一个 Futrue，在 Future 里面有 isDone 方法来判断任务是否处理结束，还有 get 方法可以一直阻塞直到任务结束然后获取结果，但整体来说这种方式，还是同步的，因为需要客户端不断阻塞等待或者不断轮询才能知道任务是否完成。
+
+Future 的主要缺点：
+
 （1）不支持手动完成 
-我提交了一个任务，但是执行太慢了，我通过其他路径已经获取到了任务结果， 现在没法把这个任务结果通知到正在执行的线程，所以必须主动取消或者一直 等待它执行完成 
+
+我提交了一个任务，但是执行太慢了，我通过其他路径已经获取到了任务结果，现在没法把这个任务结果通知到正在执行的线程，所以必须主动取消或者一直等待它执行完成 
+
 （2）不支持进一步的非阻塞调用 
+
 通过 Future 的 get 方法会一直阻塞到任务完成，但是想在获取任务之后执行额外的任务，因为 Future 不支持回调函数，所以无法实现这个功能 
-（3）不支持链式调用 
-对于 Future 的执行结果，我们想继续传到下一个 Future 处理使用，从而形成 一个链式的 pipline 调用，这在 Future 中是没法实现的。 
-（4）不支持多个 Future 合并比如我们有 10 个 Future 并行执行，我们想在所有的 Future 运行完毕后， 执行某些函数，是没法通过 Future 实现的。 
+
+（3）不支持链式调用
+
+对于 Future 的执行结果，我们想继续传到下一个 Future 处理使用，从而形成 一个链式的 pipline 调用，这在 Future 中是没法实现的。
+
+（4）不支持多个 Future 合并
+
+比如有 10 个 Future 并行执行，我们想在所有的 Future 运行完毕后， 执行某些函数，是没法通过 Future 实现的。 
+
 （5）不支持异常处理 
+
 Future 的 API 没有任何的异常处理的 api，所以在异步运行时，如果出了问题是不好定位的。
+
 ### CompletableFuture使用
 #### 基本使用
 场景:主线程里面创建一个 CompletableFuture，然后主线程调用 get 方法会阻塞，最后我们在一个子线程中使其终止。
 ```java
-/
+/*
 * 主线程里面创建一个 CompletableFuture，然后主线程调用 get 方法会阻塞，
 * 最后我们在一个子线程中使其终止
 */
@@ -1887,28 +1907,28 @@ public static void main(String[] args) throws Exception{
     }, "A").start();
     //主线程调用 get 方法阻塞
     System.out.println("主线程调用 get 方法获取结果为: " + future.get());
-    System.out.println("主线程完成,阻塞结束!!!!!!");
+    System.out.println("主线程完成,阻塞结束!");
 }
 ```
 #### 没有返回值的异步任务
 ```java
-    @Test
-    void noReturnAsyTask() throws ExecutionException, InterruptedException {
-        System.out.println("主线程开始");
-        //运行一个没有返回值的异步任务
-        CompletableFuture<Void> future = CompletableFuture.runAsync(() -> {
-            try {
-                System.out.println("子线程启动干活");
-                Thread.sleep(5000);
-                System.out.println("子线程完成");
-            } catch (Exception e) {
-                e.printStackTrace();
-            }
-        });
-        //主线程阻塞
-        future.get();
-        System.out.println("主线程结束");
-    }
+@Test
+void noReturnAsyTask() throws ExecutionException, InterruptedException {
+    System.out.println("主线程开始");
+    //运行一个没有返回值的异步任务
+    CompletableFuture<Void> future = CompletableFuture.runAsync(() -> {
+        try {
+            System.out.println("子线程启动干活");
+            Thread.sleep(5000);
+            System.out.println("子线程完成");
+        } catch (Exception e) {
+            e.printStackTrace();
+        }
+    });
+    //主线程阻塞
+    future.get();
+    System.out.println("主线程结束");
+}
 ```
 #### 有返回值的异步任务
 ```java
@@ -2025,6 +2045,7 @@ void dealWithExceptionHandle() throws ExecutionException, InterruptedException {
 ```
 #### 结果合并 thenCompose、thenCombine
 `thenCompose()` 合并两个有依赖关系的 CompletableFutures 的执行结果
+
 ```java
 @Test
 void mergeResultThenCompose() throws ExecutionException, InterruptedException {
