@@ -7,7 +7,7 @@ categories: [数据库]
 tags: [Redis]
 order: 2
 ---
-![image.png](https://cdn.nlark.com/yuque/0/2023/png/32600948/1682753290618-15c35fc0-c15c-4a6f-ae3b-6778589e3059.png#averageHue=%23f8f3f2&clientId=u15b12849-720d-4&from=paste&height=559&id=u405a8d9d&originHeight=559&originWidth=1050&originalType=binary&ratio=1&rotation=0&showTitle=false&size=180384&status=done&style=none&taskId=ub9a56d6f-76b5-4018-8c3a-e807f494c51&title=&width=1050)
+![](https://cdn.nlark.com/yuque/0/2023/png/32600948/1682753290618-15c35fc0-c15c-4a6f-ae3b-6778589e3059.png#averageHue=%23f8f3f2&clientId=u15b12849-720d-4&from=paste&height=559&id=u405a8d9d&originHeight=559&originWidth=1050&originalType=binary&ratio=1&rotation=0&showTitle=false&size=180384&status=done&style=none&taskId=ub9a56d6f-76b5-4018-8c3a-e807f494c51)
 ## 短信登录
 ### 基于Session实现登录流程
 **发送验证码：**
@@ -17,7 +17,7 @@ order: 2
 用户将验证码和手机号进行输入，后台从session中拿到当前验证码，然后和用户输入的验证码进行校验，如果不一致，则无法通过校验，如果一致，则后台根据手机号查询用户，如果用户不存在，则为用户创建账号信息，保存到数据库，无论是否存在，都会将用户信息保存到session中，方便后续获得当前登录信息
 **校验登录状态：**
 用户在请求的时候，会从cookie中携带者JsessionId到后台，后台通过JsessionId从session中拿到用户信息，如果没有session信息，则进行拦截，如果有session信息，则将用户信息保存到threadLocal中，并且放行。
-![image.png](https://cdn.nlark.com/yuque/0/2023/png/32600948/1682753373150-322778ce-1f53-4859-8062-90158a61bb1c.png#averageHue=%23f1eded&clientId=u15b12849-720d-4&from=paste&height=534&id=u03729788&originHeight=534&originWidth=1188&originalType=binary&ratio=1&rotation=0&showTitle=false&size=122897&status=done&style=none&taskId=u9d734c7b-9b90-4c4a-8e5b-ceb568acd29&title=&width=1188)
+![](https://cdn.nlark.com/yuque/0/2023/png/32600948/1682753373150-322778ce-1f53-4859-8062-90158a61bb1c.png#averageHue=%23f1eded&clientId=u15b12849-720d-4&from=paste&height=534&id=u03729788&originHeight=534&originWidth=1188&originalType=binary&ratio=1&rotation=0&showTitle=false&size=122897&status=done&style=none&taskId=u9d734c7b-9b90-4c4a-8e5b-ceb568acd29&title=&width=1188)
 ### 实现发送短信验证码功能
 **具体代码如下**
 

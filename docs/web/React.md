@@ -355,7 +355,7 @@ import _ from 'lodash'
 `classnames` 是一个 JavaScript 工具库，用于动态生成 HTML 元素的 class 字符串。它通常在 React 应用程序中用于简化条件性地应用 CSS 类名。
 `classnames` 可以更方便地处理动态 class 名称的拼接，特别是在有多个条件需要考虑时，代码会更加清晰和简洁。
 
-1.  **安装 **`**classnames**`：
+1.  **安装**`classnames`：
 你可以使用 npm 或者 yarn 来安装 `classnames`： 
 ```bash
 npm install classnames

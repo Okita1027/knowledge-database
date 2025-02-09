@@ -256,11 +256,11 @@ Redis的Key虽然可以自定义，但最好遵循下面的几个最佳实践约
 
 ![单个命令的执行流程](https://gcore.jsdelivr.net/gh/Okita1027/knowledge-database-images@main/database/redis/senior01.png)
 
-![image-20241008140800562](https://gcore.jsdelivr.net/gh/Okita1027/knowledge-database-images@main/database/redis/senior02.png)
+![](https://gcore.jsdelivr.net/gh/Okita1027/knowledge-database-images@main/database/redis/senior02.png)
 
 Redis处理指令是很快的，主要花费的时候在于网络传输。于是乎很容易想到将多条指令批量的传输给redis
 
-![image-20241008140829617](https://gcore.jsdelivr.net/gh/Okita1027/knowledge-database-images@main/database/redis/senior03.png)
+![](https://gcore.jsdelivr.net/gh/Okita1027/knowledge-database-images@main/database/redis/senior03.png)
 
 
 
@@ -321,7 +321,7 @@ void testPipeline() {
 
 有4种解决方案
 
-![image-20241008141331384](https://gcore.jsdelivr.net/gh/Okita1027/knowledge-database-images@main/database/redis/senior04.png)
+![](https://gcore.jsdelivr.net/gh/Okita1027/knowledge-database-images@main/database/redis/senior04.png)
 
 - 第一种方案：串行执行，所以这种方式没有什么意义，当然，执行起来就很简单了，缺点就是耗时过久。
 
@@ -353,7 +353,7 @@ void testPipeline() {
 - `slowlog get [n]`：读取n条慢查询日志
 - `slowlog reset`：清空慢查询列表
 
-![image-20241008145523779](https://gcore.jsdelivr.net/gh/Okita1027/knowledge-database-images@main/database/redis/senior05.png)
+![](https://gcore.jsdelivr.net/gh/Okita1027/knowledge-database-images@main/database/redis/senior05.png)
 
 ## 内存划分、配置
 
@@ -394,7 +394,7 @@ Redis底层分配并不是这个key有多大，他就会分配多大，而是有
 
 客户端缓冲区：指的就是我们发送命令时，客户端用来缓存命令的一个缓冲区，也就是我们向redis输入数据的输入端缓冲区和redis向客户端返回数据的响应缓存区，输入缓冲区最大1G且不能设置，所以这一块根本不用担心，如果超过了这个空间，redis会直接断开，因为本来此时此刻就代表着redis处理不过来了，我们需要担心的就是输出端缓冲区
 
-![image-20241008162702056](https://gcore.jsdelivr.net/gh/Okita1027/knowledge-database-images@main/database/redis/senior06.png)
+![](https://gcore.jsdelivr.net/gh/Okita1027/knowledge-database-images@main/database/redis/senior06.png)
 
 在使用redis过程中，处理大量的big value，会导致输出结果过多，如果输出缓存区过大，会导致redis直接断开，而默认配置的情况下是没有大小的，内存可能一下子被占满，会直接导致redis断开，解决方案有两个
 
@@ -1688,15 +1688,15 @@ Redis将在底层创建2个SDS，其中一个是包含"name"的SDS,另一个是�
 
 SDS是一个结构体，源码如下：
 
-![image-20241023081902159](https://gcore.jsdelivr.net/gh/Okita1027/knowledge-database-images@main/database/redis/senior07.png)
+![](https://gcore.jsdelivr.net/gh/Okita1027/knowledge-database-images@main/database/redis/senior07.png)
 
 其中，一个包含字符串“name”的SDS结构如下：
 
-![image-20241023081956852](https://gcore.jsdelivr.net/gh/Okita1027/knowledge-database-images@main/database/redis/senior08.png)
+![](https://gcore.jsdelivr.net/gh/Okita1027/knowledge-database-images@main/database/redis/senior08.png)
 
 SDS之所以叫做动态字符串，是因为它具备动态扩容的能力，例如一个内容为“hi”的SDS：
 
-![image-20241023082033717](https://gcore.jsdelivr.net/gh/Okita1027/knowledge-database-images@main/database/redis/senior09.png)
+![](https://gcore.jsdelivr.net/gh/Okita1027/knowledge-database-images@main/database/redis/senior09.png)
 
 假如我们要给SDS追加一段字符串“,Amy”，这里首先会申请新内存空间：
 
@@ -1706,20 +1706,20 @@ SDS之所以叫做动态字符串，是因为它具备动态扩容的能力，�
 
 这种机制称为**内存预分配**。
 
-![image-20241023082224756](https://gcore.jsdelivr.net/gh/Okita1027/knowledge-database-images@main/database/redis/senior10.png)
+![](https://gcore.jsdelivr.net/gh/Okita1027/knowledge-database-images@main/database/redis/senior10.png)
 
 ### intset
 
 IntSet是Redis中set集合的一种实现方式，基于整数数组来实现，并且具备长度可变、有序等特征。
 结构如下：
 
-![image-20241023082450370](https://gcore.jsdelivr.net/gh/Okita1027/knowledge-database-images@main/database/redis/senior11.png)
+![](https://gcore.jsdelivr.net/gh/Okita1027/knowledge-database-images@main/database/redis/senior11.png)
 
 其中的encoding包含三种模式，表示存储的整数大小不同：
 
-![image-20241023082517392](https://gcore.jsdelivr.net/gh/Okita1027/knowledge-database-images@main/database/redis/senior12.png)
+![](https://gcore.jsdelivr.net/gh/Okita1027/knowledge-database-images@main/database/redis/senior12.png)
 
-![image-20241023082556150](https://gcore.jsdelivr.net/gh/Okita1027/knowledge-database-images@main/database/redis/senior13.png)
+![](https://gcore.jsdelivr.net/gh/Okita1027/knowledge-database-images@main/database/redis/senior13.png)
 
 现在，数组中每个数字都在int16_t的范围内，因此采用的编码方式是INTSET_ENC_INT16，每部分占用的字节大小为：
 
@@ -1727,7 +1727,7 @@ IntSet是Redis中set集合的一种实现方式，基于整数数组来实现，
 - length：4字节
 - contents：2字节 * 3  = 6字节
 
-![image-20241023082925154](https://gcore.jsdelivr.net/gh/Okita1027/knowledge-database-images@main/database/redis/senior14.png)
+![](https://gcore.jsdelivr.net/gh/Okita1027/knowledge-database-images@main/database/redis/senior14.png)
 
 我们向其中添加一个数字：50000，这个数字超出了int16_t的范围，intset会自动升级编码方式到合适的大小。
 以当前案例来说流程如下：
@@ -1737,7 +1737,7 @@ IntSet是Redis中set集合的一种实现方式，基于整数数组来实现，
 3. 将待添加的元素放入数组末尾
 4. 最后，将inset的encoding属性改为INTSET_ENC_INT32，将length属性改为4
 
-![image-20241023083111193](https://gcore.jsdelivr.net/gh/Okita1027/knowledge-database-images@main/database/redis/senior15.png)
+![](https://gcore.jsdelivr.net/gh/Okita1027/knowledge-database-images@main/database/redis/senior15.png)
 
 **总结**
 
@@ -1752,17 +1752,17 @@ Intset可以看做是特殊的整数数组，具备一些特点：
 Redis是一个键值型（Key-Value Pair）的数据库，我们可以根据键实现快速的增删改查。而键与值的映射关系正是通过Dict来实现的。
 Dict由三部分组成，分别是：哈希表（DictHashTable）、哈希节点（DictEntry）、字典（Dict）
 
-![image-20241023083421979](https://gcore.jsdelivr.net/gh/Okita1027/knowledge-database-images@main/database/redis/senior16.png)
+![](https://gcore.jsdelivr.net/gh/Okita1027/knowledge-database-images@main/database/redis/senior16.png)
 
 当我们向Dict添加键值对时，Redis首先根据key计算出hash值（h），然后利用 h & sizemask来计算元素应该存储到数组中的哪个索引位置。我们存储k1=v1，假设k1的哈希值h=1，则1&3=1，因此k1=v1要存储到数组角标1位置。
 
-![image-20241023083653903](https://gcore.jsdelivr.net/gh/Okita1027/knowledge-database-images@main/database/redis/senior17.png)
+![](https://gcore.jsdelivr.net/gh/Okita1027/knowledge-database-images@main/database/redis/senior17.png)
 
 Dict由三部分组成，分别是：哈希表（DictHashTable）、哈希节点（DictEntry）、字典（Dict）
 
-![image-20241023083915179](https://gcore.jsdelivr.net/gh/Okita1027/knowledge-database-images@main/database/redis/senior18.png)
+![](https://gcore.jsdelivr.net/gh/Okita1027/knowledge-database-images@main/database/redis/senior18.png)
 
-![image-20241023083935436](https://gcore.jsdelivr.net/gh/Okita1027/knowledge-database-images@main/database/redis/senior19.png)
+![](https://gcore.jsdelivr.net/gh/Okita1027/knowledge-database-images@main/database/redis/senior19.png)
 
 **Dict的扩容**
 
@@ -1772,9 +1772,9 @@ Dict在每次新增键值对时都会检查负载因子（LoadFactor = used/size
 - 哈希表的 LoadFactor >= 1，并且服务器没有执行 BGSAVE 或者 BGREWRITEAOF 等后台进程；
 - 哈希表的 LoadFactor > 5 ；
 
-![image-20241023084218012](https://gcore.jsdelivr.net/gh/Okita1027/knowledge-database-images@main/database/redis/senior20.png)
+![](https://gcore.jsdelivr.net/gh/Okita1027/knowledge-database-images@main/database/redis/senior20.png)
 
-![image-20241023084241281](https://gcore.jsdelivr.net/gh/Okita1027/knowledge-database-images@main/database/redis/senior21.png)
+![](https://gcore.jsdelivr.net/gh/Okita1027/knowledge-database-images@main/database/redis/senior21.png)
 
 **Dict的rehash**
 
@@ -1793,7 +1793,7 @@ Dict在每次新增键值对时都会检查负载因子（LoadFactor = used/size
 
 整个过程可以描述成：
 
-![image-20241023084432986](https://gcore.jsdelivr.net/gh/Okita1027/knowledge-database-images@main/database/redis/senior22.png)
+![](https://gcore.jsdelivr.net/gh/Okita1027/knowledge-database-images@main/database/redis/senior22.png)
 
 **总结**
 
@@ -1815,7 +1815,7 @@ Dict的伸缩：
 
 ZipList 是一种特殊的“双端链表” ，由一系列特殊编码的连续内存块组成。可以在任意一端进行压入/弹出操作, 并且该操作的时间复杂度为 O(1)。
 
-![image-20241023090307047](https://gcore.jsdelivr.net/gh/Okita1027/knowledge-database-images@main/database/redis/senior23.png)
+![](https://gcore.jsdelivr.net/gh/Okita1027/knowledge-database-images@main/database/redis/senior23.png)
 
 ![image-20241023090358960](https://gcore.jsdelivr.net/gh/Okita1027/knowledge-database-images@main/database/redis/senior24.png)
 
@@ -1831,7 +1831,7 @@ ZipList 是一种特殊的“双端链表” ，由一系列特殊编码的连�
 
 ZipList 中的Entry并不像普通链表那样记录前后节点的指针，因为记录两个指针要占用16个字节，浪费内存。而是采用了下面的结构：
 
-![image-20241023090840799](https://gcore.jsdelivr.net/gh/Okita1027/knowledge-database-images@main/database/redis/senior25.png)
+![](https://gcore.jsdelivr.net/gh/Okita1027/knowledge-database-images@main/database/redis/senior25.png)
 
 * previous_entry_length：前一节点的长度，占1个或5个字节。
   * 如果前一节点的长度小于254字节，则采用1个字节来保存这个长度值
@@ -1855,7 +1855,7 @@ ZipListEntry中的encoding编码分为字符串和整数两种：
 
 例如，我们要保存字符串：“ab”和 “bc”
 
-![image-20241023090921359](https://gcore.jsdelivr.net/gh/Okita1027/knowledge-database-images@main/database/redis/senior26.png)
+![](https://gcore.jsdelivr.net/gh/Okita1027/knowledge-database-images@main/database/redis/senior26.png)
 
 ZipListEntry中的encoding编码分为字符串和整数两种：
 
@@ -1870,9 +1870,9 @@ ZipListEntry中的encoding编码分为字符串和整数两种：
 | 11111110 | 1            | 8位有符整数(1 bytes)                                       |
 | 1111xxxx | 1            | 直接在xxxx位置保存数值，范围从0001~1101，减1后结果为实际值 |
 
-![image-20241023090954494](https://gcore.jsdelivr.net/gh/Okita1027/knowledge-database-images@main/database/redis/senior27.png)
+![](https://gcore.jsdelivr.net/gh/Okita1027/knowledge-database-images@main/database/redis/senior27.png)
 
-![image-20241023091008099](https://gcore.jsdelivr.net/gh/Okita1027/knowledge-database-images@main/database/redis/senior28.png)
+![](https://gcore.jsdelivr.net/gh/Okita1027/knowledge-database-images@main/database/redis/senior28.png)
 
 #### 连锁更新问题
 
@@ -1881,7 +1881,7 @@ ZipList的每个Entry都包含previous_entry_length来记录上一个节点的�
 如果前一节点的长度大于等于254字节，则采用5个字节来保存这个长度值，第一个字节为0xfe，后四个字节才是真实长度数据
 现在，假设我们有N个连续的、长度为250~253字节之间的entry，因此entry的previous_entry_length属性用1个字节即可表示，如图所示：
 
-![image-20241023091050054](https://gcore.jsdelivr.net/gh/Okita1027/knowledge-database-images@main/database/redis/senior29.png)
+![](https://gcore.jsdelivr.net/gh/Okita1027/knowledge-database-images@main/database/redis/senior29.png)
 
 ZipList这种特殊情况下产生的连续多次空间扩展操作称之为连锁更新（Cascade Update）。新增、删除都可能导致连锁更新的发生。
 
@@ -1906,7 +1906,7 @@ ZipList这种特殊情况下产生的连续多次空间扩展操作称之为连�
 
 ​	答：Redis在3.2版本引入了新的数据结构QuickList，它是一个双端链表，只不过链表中的每个节点都是一个ZipList。
 
-![1653986474927](https://gcore.jsdelivr.net/gh/Okita1027/knowledge-database-images@main/database/redis/senior30.png)
+![](https://gcore.jsdelivr.net/gh/Okita1027/knowledge-database-images@main/database/redis/senior30.png)
 
 为了避免QuickList中的每个ZipList中entry过多，Redis提供了一个配置项：list-max-ziplist-size来限制。
 如果值为正，则代表ZipList的允许的entry个数的最大值
@@ -1920,15 +1920,15 @@ ZipList这种特殊情况下产生的连续多次空间扩展操作称之为连�
 
 其默认值为 -2：
 
-![1653986642777](https://gcore.jsdelivr.net/gh/Okita1027/knowledge-database-images@main/database/redis/senior31.png)
+![](https://gcore.jsdelivr.net/gh/Okita1027/knowledge-database-images@main/database/redis/senior31.png)
 
 以下是QuickList的和QuickListNode的结构源码：
 
-![1653986667228](https://gcore.jsdelivr.net/gh/Okita1027/knowledge-database-images@main/database/redis/senior32.png)
+![](https://gcore.jsdelivr.net/gh/Okita1027/knowledge-database-images@main/database/redis/senior32.png)
 
 我们接下来用一段流程图来描述当前的这个结构
 
-![1653986718554](https://gcore.jsdelivr.net/gh/Okita1027/knowledge-database-images@main/database/redis/senior33.png)
+![](https://gcore.jsdelivr.net/gh/Okita1027/knowledge-database-images@main/database/redis/senior33.png)
 
 
 
@@ -1947,19 +1947,19 @@ SkipList（跳表）首先是链表，但与传统链表相比有几点差异：
 元素按照升序排列存储
 节点可能包含多个指针，指针跨度不同。
 
-![1653986771309](https://gcore.jsdelivr.net/gh/Okita1027/knowledge-database-images@main/database/redis/senior34.png)
+![](https://gcore.jsdelivr.net/gh/Okita1027/knowledge-database-images@main/database/redis/senior34.png)
 
 SkipList（跳表）首先是链表，但与传统链表相比有几点差异：
 元素按照升序排列存储
 节点可能包含多个指针，指针跨度不同。
 
-![1653986813240](https://gcore.jsdelivr.net/gh/Okita1027/knowledge-database-images@main/database/redis/senior35.png)
+![](https://gcore.jsdelivr.net/gh/Okita1027/knowledge-database-images@main/database/redis/senior35.png)
 
 SkipList（跳表）首先是链表，但与传统链表相比有几点差异：
 元素按照升序排列存储
 节点可能包含多个指针，指针跨度不同。
 
-![1653986877620](https://gcore.jsdelivr.net/gh/Okita1027/knowledge-database-images@main/database/redis/senior36.png)
+![](https://gcore.jsdelivr.net/gh/Okita1027/knowledge-database-images@main/database/redis/senior36.png)
 
 **SkipList的特点总结**
 
@@ -1973,7 +1973,7 @@ SkipList（跳表）首先是链表，但与传统链表相比有几点差异：
 
 Redis中的任意数据类型的键和值都会被封装为一个RedisObject，也叫做Redis对象，源码如下：
 
-![image-20241023092033153](https://gcore.jsdelivr.net/gh/Okita1027/knowledge-database-images@main/database/redis/senior37.png)
+![](https://gcore.jsdelivr.net/gh/Okita1027/knowledge-database-images@main/database/redis/senior37.png)
 
 **什么是redisObject？**
 从Redis的使用者的角度来看，⼀个Redis节点包含多个database（非cluster模式下默认是16个，cluster模式下只能是1个），而一个database维护了从key space到object space的映射关系。这个映射关系的key是string类型，⽽value可以是多种数据类型，比如：
@@ -2023,15 +2023,15 @@ String是Redis中最常见的数据存储类型：
 （1）底层实现⽅式：动态字符串sds 或者 long
 String的内部存储结构⼀般是sds（Simple Dynamic String，可以动态扩展内存），但是如果⼀个String类型的value的值是数字，那么Redis内部会把它转成long类型来存储，从⽽减少内存的使用。
 
-![38](https://gcore.jsdelivr.net/gh/Okita1027/knowledge-database-images@main/database/redis/senior38.png)
+![](https://gcore.jsdelivr.net/gh/Okita1027/knowledge-database-images@main/database/redis/senior38.png)
 
 如果存储的字符串是整数值，并且大小在LONG_MAX范围内，则会采用INT编码：直接将数据保存在RedisObject的ptr指针位置（刚好8字节），不再需要SDS了。
 
-![1653987159575](https://gcore.jsdelivr.net/gh/Okita1027/knowledge-database-images@main/database/redis/senior39.png)
+![](https://gcore.jsdelivr.net/gh/Okita1027/knowledge-database-images@main/database/redis/senior39.png)
 
-![1653987172764](https://gcore.jsdelivr.net/gh/Okita1027/knowledge-database-images@main/database/redis/senior40.png)
+![](https://gcore.jsdelivr.net/gh/Okita1027/knowledge-database-images@main/database/redis/senior40.png)
 
-![1653987202522](https://gcore.jsdelivr.net/gh/Okita1027/knowledge-database-images@main/database/redis/senior41.png)
+![](https://gcore.jsdelivr.net/gh/Okita1027/knowledge-database-images@main/database/redis/senior41.png)
 
 确切地说，String在Redis中是⽤⼀个robj来表示的。
 
@@ -2043,7 +2043,7 @@ String的内部存储结构⼀般是sds（Simple Dynamic String，可以动态�
 
 Redis的List类型可以从首、尾操作列表中的元素：
 
-![1653987240622](https://gcore.jsdelivr.net/gh/Okita1027/knowledge-database-images@main/database/redis/senior42.png)
+![](https://gcore.jsdelivr.net/gh/Okita1027/knowledge-database-images@main/database/redis/senior42.png)
 
 哪一个数据结构能满足上述特征？
 
@@ -2057,7 +2057,7 @@ Redis的List结构类似一个双端链表，可以从首、尾操作列表中�
 
 在3.2版本之后，Redis统一采用QuickList来实现List：
 
-![image-20241023093453412](https://gcore.jsdelivr.net/gh/Okita1027/knowledge-database-images@main/database/redis/senior43.png)
+![](https://gcore.jsdelivr.net/gh/Okita1027/knowledge-database-images@main/database/redis/senior43.png)
 
 ### Set
 
@@ -2067,7 +2067,7 @@ Set是Redis中的单列集合，满足下列特点：
 * 保证元素唯一
 * 求交集、并集、差集
 
-![image-20241023093729721](https://gcore.jsdelivr.net/gh/Okita1027/knowledge-database-images@main/database/redis/senior44.png)
+![](https://gcore.jsdelivr.net/gh/Okita1027/knowledge-database-images@main/database/redis/senior44.png)
 
 可以看出，Set对查询元素的效率要求非常高，思考一下，什么样的数据结构可以满足？
 HashTable，也就是Redis中的Dict，不过Dict是双列集合（可以存键、值对）
@@ -2076,11 +2076,11 @@ Set是Redis中的集合，不一定确保元素有序，可以满足元素唯一
 为了查询效率和唯一性，set采用HT编码（Dict）。Dict中的key用来存储元素，value统一为null。
 当存储的所有数据都是整数，并且元素数量不超过set-max-intset-entries时，Set会采用IntSet编码，以节省内存
 
-![1653987388177](https://gcore.jsdelivr.net/gh/Okita1027/knowledge-database-images@main/database/redis/senior45.png)
+![](https://gcore.jsdelivr.net/gh/Okita1027/knowledge-database-images@main/database/redis/senior45.png)
 
 结构如下：
 
-​	![1653987454403](https://gcore.jsdelivr.net/gh/Okita1027/knowledge-database-images@main/database/redis/senior46.png)
+![](https://gcore.jsdelivr.net/gh/Okita1027/knowledge-database-images@main/database/redis/senior46.png)
 
 ### ZSET
 
@@ -2090,16 +2090,16 @@ ZSet也就是SortedSet，其中每一个元素都需要指定一个score值和me
 * member必须唯一
 * 可以根据member查询分数
 
-![image-20241023093845348](https://gcore.jsdelivr.net/gh/Okita1027/knowledge-database-images@main/database/redis/senior47.png)
+![](https://gcore.jsdelivr.net/gh/Okita1027/knowledge-database-images@main/database/redis/senior47.png)
 
 因此，zset底层数据结构必须满足键值存储、键必须唯一、可排序这几个需求。之前学习的哪种编码结构可以满足？
 
 * SkipList：可以排序，并且可以同时存储score和ele值（member）
 * HT（Dict）：可以键值存储，并且可以根据key找value
 
-![1653992121692](https://gcore.jsdelivr.net/gh/Okita1027/knowledge-database-images@main/database/redis/senior48.png)
+![](https://gcore.jsdelivr.net/gh/Okita1027/knowledge-database-images@main/database/redis/senior48.png)
 
-![1653992172526](https://gcore.jsdelivr.net/gh/Okita1027/knowledge-database-images@main/database/redis/senior49.png)
+![](https://gcore.jsdelivr.net/gh/Okita1027/knowledge-database-images@main/database/redis/senior49.png)
 
 当元素数量不多时，HT和SkipList的优势不明显，而且更耗内存。因此zset还会采用ZipList结构来节省内存，不过需要同时满足两个条件：
 
@@ -2111,9 +2111,9 @@ ziplist本身没有排序功能，而且没有键值对的概念，因此需要�
 * ZipList是连续内存，因此score和element是紧挨在一起的两个entry， element在前，score在后
 * score越小越接近队首，score越大越接近队尾，按照score值升序排列
 
-![1653992238097](https://gcore.jsdelivr.net/gh/Okita1027/knowledge-database-images@main/database/redis/senior50.png)
+![](https://gcore.jsdelivr.net/gh/Okita1027/knowledge-database-images@main/database/redis/senior50.png)
 
-![1653992299740](https://gcore.jsdelivr.net/gh/Okita1027/knowledge-database-images@main/database/redis/senior51.png)
+![](https://gcore.jsdelivr.net/gh/Okita1027/knowledge-database-images@main/database/redis/senior51.png)
 
 ### Hash
 
@@ -2146,11 +2146,11 @@ Redis的hash之所以这样设计，是因为当ziplist变得很⼤的时候，�
 
 hash结构如下：
 
-![1653992339937](https://gcore.jsdelivr.net/gh/Okita1027/knowledge-database-images@main/database/redis/senior52.png)
+![](https://gcore.jsdelivr.net/gh/Okita1027/knowledge-database-images@main/database/redis/senior52.png)
 
 zset集合如下：
 
-![1653992360355](https://gcore.jsdelivr.net/gh/Okita1027/knowledge-database-images@main/database/redis/senior53.png)
+![](https://gcore.jsdelivr.net/gh/Okita1027/knowledge-database-images@main/database/redis/senior53.png)
 
 因此，Hash底层采用的编码与Zset也基本一致，只需要把排序有关的SkipList去掉即可：
 
@@ -2161,7 +2161,7 @@ Hash结构默认采用ZipList编码，用以节省内存。 ZipList中相邻的�
 * ZipList中的元素数量超过了hash-max-ziplist-entries（默认512）
 * ZipList中的任意entry大小超过了hash-max-ziplist-value（默认64字节）
 
-![1653992413406](https://gcore.jsdelivr.net/gh/Okita1027/knowledge-database-images@main/database/redis/senior54.png)
+![](https://gcore.jsdelivr.net/gh/Okita1027/knowledge-database-images@main/database/redis/senior54.png)
 
 ## Redis网络模型
 
@@ -2171,15 +2171,15 @@ Hash结构默认采用ZipList编码，用以节省内存。 ZipList中相邻的�
 
 ubuntu和Centos 都是Linux的发行版，发行版可以看成对linux包了一层壳，任何Linux发行版，其系统内核都是Linux。我们的应用都需要通过Linux内核与硬件交互
 
-![1653844970346](https://gcore.jsdelivr.net/gh/Okita1027/knowledge-database-images@main/database/redis/senior55.png)
+![](https://gcore.jsdelivr.net/gh/Okita1027/knowledge-database-images@main/database/redis/senior55.png)
 
 用户的应用，比如redis，mysql等其实是没有办法去执行访问我们操作系统的硬件的，所以我们可以通过发行版的这个壳子去访问内核，再通过内核去访问计算机硬件
 
-![1653845147190](https://gcore.jsdelivr.net/gh/Okita1027/knowledge-database-images@main/database/redis/senior56.png)
+![](https://gcore.jsdelivr.net/gh/Okita1027/knowledge-database-images@main/database/redis/senior56.png)
 
 计算机硬件包括，如cpu，内存，网卡等等，内核（通过寻址空间）可以操作硬件的，但是内核需要不同设备的驱动，有了这些驱动之后，内核就可以去对计算机硬件去进行 内存管理，文件系统的管理，进程的管理等等
 
-![1653896065386](https://gcore.jsdelivr.net/gh/Okita1027/knowledge-database-images@main/database/redis/senior57.png)
+![](https://gcore.jsdelivr.net/gh/Okita1027/knowledge-database-images@main/database/redis/senior57.png)
 
 
 
@@ -2189,7 +2189,7 @@ ubuntu和Centos 都是Linux的发行版，发行版可以看成对linux包了一
 
 什么是寻址空间呢？我们的应用程序也好，还是内核空间也好，都是没有办法直接去物理内存的，而是通过分配一些虚拟内存映射到物理内存中，我们的内核和应用程序去访问虚拟内存的时候，就需要一个虚拟地址，这个地址是一个无符号的整数，比如一个32位的操作系统，他的带宽就是32，他的虚拟地址就是2的32次方，也就是说他寻址的范围就是0~2的32次方， 这片寻址空间对应的就是2的32个字节，就是4GB，这个4GB，会有3个GB分给用户空间，会有1GB给内核系统
 
-![1653896377259](https://gcore.jsdelivr.net/gh/Okita1027/knowledge-database-images@main/database/redis/senior58.png)
+![](https://gcore.jsdelivr.net/gh/Okita1027/knowledge-database-images@main/database/redis/senior58.png)
 
 在Linux中，权限分成两个等级，0和3，用户空间只能执行受限的命令（Ring3），而且不能直接调用系统资源，必须通过内核提供的接口来访问内核空间可以执行特权命令（Ring0），调用一切系统资源，所以一般情况下，用户的操作是运行在用户空间，而内核运行的数据是在内核空间的，而有的情况下，一个应用程序需要去调用一些特权资源，去调用一些内核空间的操作，所以此时他俩需要在用户态和内核态之间进行切换。
 
@@ -2204,7 +2204,7 @@ Linux系统为了提高IO效率，会在用户空间和内核空间都加入缓�
 
 针对这个操作：我们的用户在写读数据时，会去向内核态申请，想要读取内核的数据，而内核数据要去等待驱动程序从硬件上读取数据，当从磁盘上加载到数据之后，内核会将数据写入到内核的缓冲区中，然后再将数据拷贝到用户态的buffer中，然后再返回给应用程序，整体而言，速度慢，就是这个原因，为了加速，我们希望read也好，还是wait for data也最好都不要等待，或者时间尽量的短。
 
-![1653896687354](https://gcore.jsdelivr.net/gh/Okita1027/knowledge-database-images@main/database/redis/senior59.png)
+![](https://gcore.jsdelivr.net/gh/Okita1027/knowledge-database-images@main/database/redis/senior59.png)
 
 ### 阻塞IO
 
@@ -2220,7 +2220,7 @@ Linux系统为了提高IO效率，会在用户空间和内核空间都加入缓�
 
 具体流程如下图：
 
-![1653897115346](https://gcore.jsdelivr.net/gh/Okita1027/knowledge-database-images@main/database/redis/senior60.png)
+![](https://gcore.jsdelivr.net/gh/Okita1027/knowledge-database-images@main/database/redis/senior60.png)
 
 用户去读取数据时，会去先发起1个`recvform`命令，去尝试从内核上加载数据，如果内核没有数据，那么用户就会等待，此时内核会去从硬件上读取数据，内核读取数据之后，会把数据拷贝到用户态，并且返回ok，整个过程，都是阻塞等待的，这就是阻塞IO
 
@@ -2245,7 +2245,7 @@ Linux系统为了提高IO效率，会在用户空间和内核空间都加入缓�
 
 
 
-![1653897270004](https://gcore.jsdelivr.net/gh/Okita1027/knowledge-database-images@main/database/redis/senior61.png)
+![](https://gcore.jsdelivr.net/gh/Okita1027/knowledge-database-images@main/database/redis/senior61.png)
 
 ### 非阻塞IO
 
@@ -2266,7 +2266,7 @@ Linux系统为了提高IO效率，会在用户空间和内核空间都加入缓�
 * 拷贝完成，用户进程解除阻塞，处理数据
 * 可以看到，非阻塞IO模型中，用户进程在第一个阶段是非阻塞，第二个阶段是阻塞状态。虽然是非阻塞，但性能并没有得到提高。而且忙等机制会导致CPU空转，CPU使用率暴增
 
-![image-20241023103832715](https://gcore.jsdelivr.net/gh/Okita1027/knowledge-database-images@main/database/redis/senior62.png)
+![](https://gcore.jsdelivr.net/gh/Okita1027/knowledge-database-images@main/database/redis/senior62.png)
 
 ### IO多路复用
 
@@ -2316,7 +2316,7 @@ Linux系统为了提高IO效率，会在用户空间和内核空间都加入缓�
 
 用IO复用模式，可以确保去读数据的时候，数据是一定存在的，他的效率比原来的阻塞IO和非阻塞IO性能都要高
 
-![image-20241023104254314](https://gcore.jsdelivr.net/gh/Okita1027/knowledge-database-images@main/database/redis/senior63.png)
+![](https://gcore.jsdelivr.net/gh/Okita1027/knowledge-database-images@main/database/redis/senior63.png)
 
 IO多路复用是利用单个线程来同时监听多个FD，并在某个FD可读、可写时得到通知，从而避免无效的等待，充分利用CPU资源。不过监听FD的方式、通知的方式又有多种实现，常见的有：
 
@@ -2336,7 +2336,7 @@ select是Linux最早是由的I/O多路复用技术：
 
 比如要监听的数据，是1,2,5三个数据，此时会执行select函数，然后将整个FD发给内核态，内核态会去遍历用户态传递过来的数据，如果发现这里边都数据都没有就绪，就休眠，直到有数据准备好时，就会被唤醒，唤醒之后，再次遍历一遍，看看谁准备好了，然后再处理掉没有准备好的数据，最后再将这个FD集合写回到用户态中去，此时用户态就知道有人准备好了，但是对于用户态而言，并不知道谁处理好了，所以用户态也需要去进行遍历，然后找到对应准备好数据的节点，再去发起读请求。
 
-![image-20241023105815900](https://gcore.jsdelivr.net/gh/Okita1027/knowledge-database-images@main/database/redis/senior64.png)
+![](https://gcore.jsdelivr.net/gh/Okita1027/knowledge-database-images@main/database/redis/senior64.png)
 
 select模式存在的问题：
 
@@ -2348,7 +2348,7 @@ select模式存在的问题：
 
 poll模式对select模式做了简单改进，但性能提升不明显，部分关键代码如下：
 
-![image-20241023110332818](https://gcore.jsdelivr.net/gh/Okita1027/knowledge-database-images@main/database/redis/senior65.png)
+![](https://gcore.jsdelivr.net/gh/Okita1027/knowledge-database-images@main/database/redis/senior65.png)
 
 IO流程：
 
@@ -2404,7 +2404,7 @@ epoll模式是对select和poll的改进，它提供了三个函数：
 
 就去等待，在用户态创建一个空的events数组，当就绪之后，我们的回调函数会把数据添加到list_head中去，当调用这个函数的时候，会去检查list_head，当然这个过程需要参考配置的等待时间，可以等一定时间，也可以一直等， 如果在此过程中，检查到了list_head中有数据会将数据添加到链表中，此时将数据放入到events数组中，并且返回对应的操作的数量，用户态的此时收到响应后，从events中拿到对应准备好的数据的节点，再去调用方法去拿数据。
 
-![image-20241023110826404](https://gcore.jsdelivr.net/gh/Okita1027/knowledge-database-images@main/database/redis/senior66.png)
+![](https://gcore.jsdelivr.net/gh/Okita1027/knowledge-database-images@main/database/redis/senior66.png)
 
 ---
 
@@ -2467,7 +2467,7 @@ epoll模式中如何解决这些问题的？
 
 当第二步完成后，就会调用`epoll_wait`函数，这个函数会去校验是否有数据准备完毕（因为数据一旦准备就绪，就会被回调函数添加到`list_head`中，在等待了一段时间后(可以进行配置)，如果等够了超时时间，则返回没有数据，如果有，则进一步判断当前是什么事件，如果是建立连接时间，则调用`accept()` 接受客户端socket，拿到建立连接的socket，然后建立起来连接，如果是其他事件，则把数据进行写出
 
-![image-20241023113144753](https://gcore.jsdelivr.net/gh/Okita1027/knowledge-database-images@main/database/redis/senior67.png)
+![](https://gcore.jsdelivr.net/gh/Okita1027/knowledge-database-images@main/database/redis/senior67.png)
 
 ### 信号驱动
 
@@ -2487,7 +2487,7 @@ epoll模式中如何解决这些问题的？
 * 内核将数据拷贝到用户空间
 * 用户进程处理数据
 
-![image-20241023113806663](https://gcore.jsdelivr.net/gh/Okita1027/knowledge-database-images@main/database/redis/senior68.png)
+![](https://gcore.jsdelivr.net/gh/Okita1027/knowledge-database-images@main/database/redis/senior68.png)
 
 当有大量IO操作时，信号较多，SIGIO处理函数不能及时处理可能导致信号队列溢出，而且内核空间与用户空间的频繁信号交互性能也较低。
 
@@ -2497,11 +2497,11 @@ epoll模式中如何解决这些问题的？
 
 他会由内核将所有数据处理完成后，由内核将数据写入到用户态中，然后才算完成，所以性能极高，不会有任何阻塞，全部都由内核完成，可以看到，异步IO模型中，用户进程在两个阶段都是非阻塞状态。
 
-![image-20241023113855148](https://gcore.jsdelivr.net/gh/Okita1027/knowledge-database-images@main/database/redis/senior69.png)
+![](https://gcore.jsdelivr.net/gh/Okita1027/knowledge-database-images@main/database/redis/senior69.png)
 
 ### 各模型对比
 
-![image-20241023113937660](https://gcore.jsdelivr.net/gh/Okita1027/knowledge-database-images@main/database/redis/senior70.png)
+![](https://gcore.jsdelivr.net/gh/Okita1027/knowledge-database-images@main/database/redis/senior70.png)
 
 ## 单线程与多线程
 
@@ -2525,9 +2525,9 @@ epoll模式中如何解决这些问题的？
 
 **Redis单线程与多线程网络模型变更**
 
-![image-20241026163259903](https://gcore.jsdelivr.net/gh/Okita1027/knowledge-database-images@main/database/redis/senior71.png)
+![](https://gcore.jsdelivr.net/gh/Okita1027/knowledge-database-images@main/database/redis/senior71.png)
 
-![image-20241026163429662](https://gcore.jsdelivr.net/gh/Okita1027/knowledge-database-images@main/database/redis/senior72.png)
+![](https://gcore.jsdelivr.net/gh/Okita1027/knowledge-database-images@main/database/redis/senior72.png)
 
 当客户端想要去连接服务器，会先到IO多路复用模型进行排队，此时会有一个连接应答处理器接受读请求，然后又把读请求注册到具体模型中去，此时这些建立起来的连接，如果是客户端请求处理器去进行执行命令时，他会去把数据读取出来，然后把数据放入到client中， clinet去解析当前的命令转化为redis认识的命令，接下来就开始处理这些命令，从redis中的command中找到这些命令，然后就真正的去操作对应的数据了，当数据操作完成后，会去找到命令回复处理器，再由他将数据写出。
 
@@ -2556,4 +2556,4 @@ Redis是一个CS架构的软件，通信一般分两步（不包括pipeline和Pu
   - 如果大小为-1，则代表不存在："$-1\r\n"
 - 数组：首字节是 ‘*’，后面跟上数组元素个数，再跟上元素，元素数据类型不限
 
-![image-20241026164621099](https://gcore.jsdelivr.net/gh/Okita1027/knowledge-database-images@main/database/redis/senior73.png)
+![](https://gcore.jsdelivr.net/gh/Okita1027/knowledge-database-images@main/database/redis/senior73.png)
