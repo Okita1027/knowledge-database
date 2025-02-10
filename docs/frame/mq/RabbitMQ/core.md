@@ -516,7 +516,7 @@ public class SpringRabbitListener {
 ### 3.2.WorkQueue
 Work queues，也被称为（Task queues），任务模型。简单来说就是**让多个消费者绑定到一个队列，共同消费队列中的消息**。
 
-![image.png](https://gcore.jsdelivr.net/gh/Okita1027/knowledge-database-images@main/frame/mq/rabbitmq/202406171601546.png)
+![](https://gcore.jsdelivr.net/gh/Okita1027/knowledge-database-images@main/frame/mq/rabbitmq/202406171601546.png)
 当消息处理比较耗时的时候，可能生产消息的速度会远远大于消息的消费速度。长此以往，消息就会堆积越来越多，无法及时处理。
 此时就可以使用work 模型，多个消费者共同处理消息处理，速度就能大大提高了。
 

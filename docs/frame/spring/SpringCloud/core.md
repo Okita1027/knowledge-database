@@ -371,8 +371,11 @@ SpringCloud底层其实是利用了一个名为Ribbon的组件，来实现负载
 
 ### 源码跟踪
 为什么只输入了service名称就可以访问了呢？之前还要获取ip和端口。
+
 显然有人帮我们根据service名称，获取到了服务实例的ip和端口。它就是`LoadBalancerInterceptor`，这个类会在对RestTemplate的请求进行拦截，然后从Eureka根据服务id获取服务列表，随后利用负载均衡算法得到真实的服务地址信息，替换服务id。
+
 源码跟踪：
+
 #### LoadBalancerIntercepor
 ![image.png](https://gcore.jsdelivr.net/gh/Okita1027/knowledge-database-images@main/frame/spring/springcloud/202406171755954.png)
 可以看到这里的intercept方法，拦截了用户的HttpRequest请求，然后做了几件事：
@@ -1340,24 +1343,29 @@ UserController：
 ## CircuitBreaker断路器
 ### 服务保护方案
 保证服务运行的健壮性，避免级联失败导致的雪崩问题，就属于微服务保护。
+
 微服务保护的方案有很多，比如：
 
 - 请求限流
 - 线程隔离
 - 服务熔断
 
-这些方案或多或少都会导致服务的体验上略有下降，比如请求限流，降低了并发上限；线程隔离，降低了可用资源数量；服务熔断，降低了服务的完整度，部分服务变的不可用或弱可用。因此这些方案都属于服务**降级**的方案。但通过这些方案，服务的健壮性得到了提升，
+这些方案或多或少都会导致服务的体验上略有下降，比如请求限流，降低了并发上限；线程隔离，降低了可用资源数量；服务熔断，降低了服务的完整度，部分服务变的不可用或弱可用。因此这些方案都属于服务**降级**的方案。但通过这些方案，服务的健壮性得到了提升。
 接下来，我们就逐一了解这些方案的原理。
+
 #### 请求限流
 服务故障最重要原因，就是并发太高！解决了这个问题，就能避免大部分故障。当然，接口的并发不是一直很高，而是突发的。因此请求限流，就是**限制或控制**接口访问的并发流量，避免服务因流量激增而出现故障。
+
 请求限流往往会有一个限流器，数量高低起伏的并发请求曲线，经过限流器就变的非常平稳。这就像是水电站的大坝，起到蓄水的作用，可以通过开关控制水流出的大小，让下游水流始终维持在一个平稳的量。
 ![](https://gcore.jsdelivr.net/gh/Okita1027/knowledge-database-images@main/frame/spring/springcloud/202406171800084.jpeg)
 
 #### 线程隔离
 当一个业务接口响应时间长，而且并发高时，就可能耗尽服务器的线程资源，导致服务内的其它接口收到影响。所以我们必须把这种影响降低，或者缩减影响的范围。线程隔离正是解决这个问题的好办法。
+
 线程隔离的思想来自轮船的舱壁模式：
 ![](https://gcore.jsdelivr.net/gh/Okita1027/knowledge-database-images@main/frame/spring/springcloud/202406171800881.png)
 轮船的船舱会被隔板分割为N个相互隔离的密闭舱，假如轮船触礁进水，只有损坏的部分密闭舱会进水，而其他舱由于相互隔离，并不会进水。这样就把进水控制在部分船体，避免了整个船舱进水而沉没。
+
 为了避免某个接口故障或压力过大导致整个服务不可用，我们可以限定每个接口可以使用的资源范围，也就是将其“隔离”起来。
 ![](https://gcore.jsdelivr.net/gh/Okita1027/knowledge-database-images@main/frame/spring/springcloud/202406171800288.jpeg)
 如图所示，我们给查询购物车业务限定可用线程数量上限为20，这样即便查询购物车的请求因为查询商品服务而出现故障，也不会导致服务器的线程资源被耗尽，不会影响到其它接口。
@@ -1376,6 +1384,7 @@ UserController：
 #### 熔断/降级
 熔断器（Circuit Breaker）用于保护系统免受故障和延迟影响。当系统的某个服务或组件出现故障或响应时间过长时，熔断器可以快速地打开并停止对该服务或组件的请求，从而防止系统雪崩效应的发生。
 降级（Fallback）用于在主服务不可用时提供备选方案。当熔断器打开时，请求将被转发到降级逻辑中，该逻辑可以是预先定义的备选操作、静态响应或者其他可替代的服务。
+
 ```xml
 <!--    断路器resilience4j    -->
 <dependency>
@@ -1581,7 +1590,9 @@ public class MyController {
 ```
 ## Micrometer+ZipKin分布式链路追踪
 Micrometer是一个用于应用程序度量（metrics）的库，它提供了一种统一的方式来收集、存储和展示应用程序的度量数据。Micrometer支持多种度量系统，包括Prometheus、Graphite、InfluxDB等。它可以帮助开发人员监控应用程序的性能指标、请求统计和资源使用情况等。
+
 Zipkin是一个开源的分布式跟踪系统，它可以帮助开发人员跟踪分布式系统中请求的流程和延迟，并提供可视化的界面来查看和分析链路追踪数据。Zipkin使用一种称为"Span"的数据结构来表示请求的跟踪信息，它包含了请求的起始时间、持续时间、服务名称等。
+
 使用Micrometer和Zipkin可以实现将应用程序的度量数据和链路追踪数据发送到Zipkin服务器进行集中存储和分析的功能。
 ![image.png](https://gcore.jsdelivr.net/gh/Okita1027/knowledge-database-images@main/frame/spring/springcloud/202406171801115.png)
 
@@ -1672,6 +1683,7 @@ management:
 Spring Cloud Gateway 是 Spring Cloud 的一个全新项目，该项目是基于 Spring 5.0，Spring Boot 2.0 和 Project Reactor 等响应式编程和事件流技术开发的网关，它旨在为微服务架构提供一种简单有效的统一的 API 路由管理方式。
 ### 网关的必要性
 Gateway网关是我们服务的守门神，所有微服务的统一入口。
+
 网关的**核心功能特性**：
 
 - 请求路由
@@ -2283,8 +2295,10 @@ spring:
 ```
 ## 微服务保护Sentinel
 ### 介绍和安装
-Sentinel是阿里巴巴开源的一款服务保护框架，目前已经加入SpringCloudAlibaba中。官方网站：
-[首页 | Sentinel](https://sentinelguard.io/zh-cn/)
+Sentinel是阿里巴巴开源的一款服务保护框架，目前已经加入SpringCloudAlibaba中。
+
+官方网站：[首页 | Sentinel](https://sentinelguard.io/zh-cn/)
+
 Sentinel 的使用可以分为两个部分:
 
 - **核心库**（Jar包）：不依赖任何框架/库，能够运行于 Java 8 及以上的版本的运行时环境，同时对 Dubbo / Spring Cloud 等框架也有较好的支持。在项目中引入依赖即可实现服务限流、隔离、熔断等功能。
@@ -2296,10 +2310,11 @@ Sentinel 的使用可以分为两个部分:
 2. `java -Dserver.port=8090 -Dcsp.sentinel.dashboard.server=localhost:8090 -Dproject.name=sentinel-dashboard -jar sentinel.jar`
 
 其它启动时可配置参数可参考官方文档：[Sentinel启动配置项](https://github.com/alibaba/Sentinel/wiki/%E5%90%AF%E5%8A%A8%E9%85%8D%E7%BD%AE%E9%A1%B9)
+
 访问:
 访问[http://localhost:8080](http://localhost:8080)页面，就可以看到sentinel的控制台了：
 ![](https://gcore.jsdelivr.net/gh/Okita1027/knowledge-database-images@main/frame/spring/springcloud/202406171802248.png)
-需要输入账号和密码，默认都是：sentinel
+需要输入账号和密码，默认都是：`sentinel`
 
 ### 微服务整合
 我们在`cart-service`模块中整合sentinel，连接`sentinel-dashboard`控制台，步骤如下：
@@ -2935,7 +2950,8 @@ public class GatewayConfiguration {
 ```
 ## 分布式事务Seata
 ### 概念
-解决分布式事务的思想：找一个统一的**事务协调者**与多个分支事务通信，检测每个分支事务的执行状态，保证全局事务下的每一个分支事务同时成功或失败
+解决分布式事务的思想：找一个统一的**事务协调者**与多个分支事务通信，检测每个分支事务的执行状态，保证全局事务下的每一个分支事务同时成功或失败。
+
 Seata对分布式事物的协调和控制就是1+3：
 
 - 1个XID：XID是全局事物的唯一标志，它可以在服务的调用链路中传递，绑定到服务的事务上下文中。

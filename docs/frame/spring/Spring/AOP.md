@@ -19,7 +19,7 @@ Advices advices = new Advices();//通知对象
 Enhancer enhancer = new Enhancer();//增强器对象
 enhancer.setSuperclass(Target.class);//增强器设置父类
 //增强器设置回调
-enhancer.setCallback((MethodInterceptor )(o, method, objects, methodProxy) -> {
+enhancer.setCallback((MethodInterceptor) (o, method, objects, methodProxy) -> {
     advices.before();
     Object result = method.invoke(target, objects);
     advices.afterReturning();

@@ -44,8 +44,9 @@ public class UserDaoImpl implements UserDao {
 | @Controller  | 在Web层类上使用 |
 
 ## Bean依赖注入
-| @Value  | 用于字段或方法，注入普通数据类型 |
+| 注解名称   | 描述                                         |
 | --- | --- |
+| @Value  | 用于字段或方法，注入普通数据类型 |
 | @Autowired | 用于字段或方法，根据类型注入引用数据 |
 | @Qualifier | 用于字段或方法，结合@Autowired，根据名称注入 |
 | @Resource | 用于字段或方法，根据类型或名称注入 |
@@ -212,8 +213,10 @@ public UserDao userDao01(){return new UserDaoImpl();}
 public UserDao userDao02(){return new UserDaoImpl2();}
 ```
 ### @Profile
-该注解的作用同于xml配置时学习profile属性`<beans profile="test">`，是进行环境切换使用的
-@Profile 标注在类或方法上，标注当前产生的Bean从属于哪个环境，只有激活了当前环境，被标注的Bean才能被注册到Spring容器里，不指定环境的Bean，任何环境下都能注册到Spring容器里
+该注解的作用同于xml配置时学习profile属性`<beans profile="test">`，是进行环境切换使用的。
+
+@Profile 标注在类或方法上，标注当前产生的Bean从属于哪个环境，只有激活了当前环境，被标注的Bean才能被注册到Spring容器里，不指定环境的Bean，任何环境下都能注册到Spring容器里。
+
 ```java
 @Repository("userDao")
 @Profile("test")

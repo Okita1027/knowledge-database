@@ -33,26 +33,26 @@ tags: [Maven]
 ## 依赖范围
 标签的位置：dependencies/dependency/**scope**
 标签的可选值：**compile**/**test**/**provided**/system/runtime/**import**
-#### ①compile 和 test 对比
+#### compile 和 test 对比
 |  | **main目录（空间）** | **test目录（空间）** | **开发过程（时间）** | **部署到服务器（时间）** |
 | --- | --- | --- | --- | --- |
 | compile | 有效 | 有效 | 有效 | 有效 |
 | test | 无效 | 有效 | 有效 | 无效 |
 
-#### ②compile 和 provided 对比
+#### compile 和 provided 对比
 |  | **main目录（空间）** | **test目录（空间）** | **开发过程（时间）** | **部署到服务器（时间）** |
 | --- | --- | --- | --- | --- |
 | compile | 有效 | 有效 | 有效 | 有效 |
 | provided | 有效 | 有效 | 有效 | 无效 |
 
-#### ③结论
+#### 结论
 compile：通常使用的第三方框架的 jar 包这样在项目实际运行时真正要用到的 jar 包都是以 compile 范围进行依赖的。比如 SSM 框架所需jar包。
 test：测试过程中使用的 jar 包，以 test 范围依赖进来。比如 junit。
 provided：在开发过程中需要用到的“服务器上的 jar 包”通常以 provided 范围依赖进来。比如 servlet-api、jsp-api。而这个范围的 jar 包之所以不参与部署、不放进 war 包，就是避免和服务器上已有的同类 jar 包产生冲突，同时减轻服务器的负担。说白了就是：“**服务器上已经有了，你就别带啦！**”
 ### 依赖的传递性
-#### ①概念
+#### 概念
 A 依赖 B，B 依赖 C，那么在 A 没有配置对 C 的依赖的情况下，A 里面能不能直接使用 C？
-#### ②传递的原则
+#### 传递的原则
 在 A 依赖 B，B 依赖 C 的前提下，C 是否能够传递到 A，取决于 B 依赖 C 时使用的依赖范围。
 
 - B 依赖 C 时使用 compile 范围：可以传递
@@ -132,7 +132,7 @@ TIP
 [INFO] +- org.springframework:**spring-core**:jar:**4.0.0**.RELEASE:compile [INFO] | - commons-logging:commons-logging:jar:1.1.1:compile [INFO] +- org.springframework:**spring-beans**:jar:**4.0.0**.RELEASE:compile [INFO] +- org.springframework:**spring-context**:jar:**4.0.0**.RELEASE:compile [INFO] +- org.springframework:**spring-expression**:jar:4.0.0.RELEASE:compile [INFO] +- org.springframework:**spring-aop**:jar:**4.0.0**.RELEASE:compile [INFO] | - aopalliance:aopalliance:jar:1.0:compile
 使用 Spring 时要求所有 Spring 自己的 jar 包版本必须一致。为了能够对这些 jar 包的版本进行统一管理，我们使用继承这个机制，将所有版本信息统一在父工程中进行管理。
 #### 4、操作
-##### ①创建父工程
+##### 创建父工程
 创建的过程和前面创建 pro01-maven-java 一样。
 工程名称：pro03-maven-parent
 工程创建好之后，要修改它的打包方式：
@@ -145,12 +145,12 @@ TIP
 <packaging>pom</packaging>
 ```
 只有打包方式为 pom 的 Maven 工程能够管理其他 Maven 工程。打包方式为 pom 的 Maven 工程中不写业务代码，它是专门管理其他 Maven 工程的工程。
-##### ②创建模块工程
+##### 创建模块工程
 模块工程类似于 IDEA 中的 module，所以需要**进入 pro03-maven-parent 工程的根目录**，然后运行 mvn archetype:generate 命令来创建模块工程。
 假设，我们创建三个模块工程：
 ![image.png](https://cdn.jsdelivr.net/gh/Okita1027/knowledge-database-images@main/frame/tool/maven/202406171444860.png)
 
-##### ③查看被添加新内容的父工程 pom.xml
+##### 查看被添加新内容的父工程 pom.xml
 下面 modules 和 module 标签是聚合功能的配置
 ```xml
 <modules>  
@@ -159,7 +159,7 @@ TIP
   <module>pro06-maven-module</module>
 </modules>
 ```
-##### ④解读子工程的pom.xml
+##### 解读子工程的pom.xml
 ```xml
 <!-- 使用parent标签指定当前工程的父工程 -->
 <parent>
@@ -175,7 +175,7 @@ TIP
 <artifactId>pro04-maven-module</artifactId>
 <!-- <version>1.0-SNAPSHOT</version> -->
 ```
-##### ⑤在父工程中配置依赖的统一管理
+##### 在父工程中配置依赖的统一管理
 ```xml
 <!-- 使用dependencyManagement标签配置对依赖的管理 -->
 <!-- 被管理的依赖并没有真正被引入到工程 -->
@@ -209,7 +209,7 @@ TIP
   </dependencies>
 </dependencyManagement>
 ```
-##### ⑥子工程中引用那些被父工程管理的依赖
+##### 子工程中引用那些被父工程管理的依赖
 关键点：省略版本号
 ```xml
 <!-- 子工程引用父工程中的依赖信息时，可以把版本号去掉。  -->
@@ -238,7 +238,7 @@ TIP
   </dependency>
 </dependencies>
 ```
-##### ⑦在父工程中升级依赖信息的版本
+##### 在父工程中升级依赖信息的版本
 ```xml
 <dependency>
   <groupId>org.springframework</groupId>
@@ -249,7 +249,7 @@ TIP
 然后在子工程中运行mvn dependency:list，效果如下：
 TIP
 [INFO] org.springframework:spring-aop:jar:4.1.4.RELEASE:compile [INFO] org.springframework:spring-core:jar:4.1.4.RELEASE:compile [INFO] org.springframework:spring-context:jar:4.1.4.RELEASE:compile [INFO] org.springframework:spring-beans:jar:4.1.4.RELEASE:compile [INFO] org.springframework:spring-expression:jar:4.1.4.RELEASE:compile
-##### ⑧在父工程中声明自定义属性
+##### 在父工程中声明自定义属性
 ```xml
 <!-- 通过自定义属性，统一指定Spring的版本 -->
 <properties>
@@ -268,17 +268,17 @@ TIP
 </dependency>
 ```
 真正实现“一处修改，处处生效”。
-#### 5、实际意义
+#### 实际意义
 ![](https://cdn.jsdelivr.net/gh/Okita1027/knowledge-database-images@main/frame/tool/maven/202406171444872.jpeg)
 编写一套符合要求、开发各种功能都能正常工作的依赖组合并不容易。如果公司里已经有人总结了成熟的组合方案，那么再开发新项目时，如果不使用原有的积累，而是重新摸索，会浪费大量的时间。为了提高效率，我们可以使用工程继承的机制，让成熟的依赖组合方案能够保留下来。
 如上图所示，公司级的父工程中管理的就是成熟的依赖组合方案，各个新项目、子系统各取所需即可。
 
 ### 聚合
-#### 1、聚合本身的含义
+#### 聚合本身的含义
 部分组成整体
 ![](https://cdn.jsdelivr.net/gh/Okita1027/knowledge-database-images@main/frame/tool/maven/202406171444265.jpeg)
 动画片《神兽金刚》中的经典台词：“我来组成头部！我来组成手臂！”就是聚合关系最生动的体现。
-#### 2、Maven 中的聚合
+#### Maven 中的聚合
 使用一个“总工程”将各个“模块工程”汇集起来，作为一个整体对应完整的项目。
 
 - 项目：整体
@@ -295,11 +295,11 @@ TIP
 
 - 总工程
 - 模块工程
-#### 3、好处
+#### 好处
 
 - 一键执行 Maven 命令：很多构建命令都可以在“总工程”中一键执行。以 mvn install 命令为例：Maven 要求有父工程时先安装父工程；有依赖的工程时，先安装被依赖的工程。我们自己考虑这些规则会很麻烦。但是工程聚合之后，在总工程执行 mvn install 可以一键完成安装，而且会自动按照正确的顺序执行。
 - 配置聚合之后，各个模块工程会在总工程中展示一个列表，让项目中的各个模块一目了然。
-#### 4、聚合的配置
+#### 聚合的配置
 在总工程中配置 modules 即可：
 ```xml
 <modules>  
@@ -308,7 +308,7 @@ TIP
   <module>pro06-maven-module</module>
 </modules>
 ```
-#### 5、依赖循环问题
+#### 依赖循环问题
 如果 A 工程依赖 B 工程，B 工程依赖 C 工程，C 工程又反过来依赖 A 工程，那么在执行构建操作时会报下面的错误：
 DANGER
 [ERROR] [ERROR] The projects in the reactor contain a cyclic reference:
