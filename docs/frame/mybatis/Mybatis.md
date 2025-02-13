@@ -28,7 +28,7 @@ tags: []
 - MyBatis 
    - 轻量级，性能出色 
    - SQL 和 Java 编码分开，功能边界清晰。Java代码专注业务、SQL语句专注数据 
-   - 开发效率稍逊于HIbernate，但是完全能够接受
+   - 开发效率稍逊于Hibernate，但是完全能够接受
 ## 搭建Mybatis
 ### 引入依赖
 ```xml
@@ -636,9 +636,13 @@ void insertUser(User user);
 </select>
 ```
 分步查询的优点：
+
 可以实现延迟加载但是必须在核心配置文件中设置全局配置信息：
-lazyLoadingEnabled：延迟加载的全局开关。当开启时，所有关联对象都会延迟加载
+
+lazyLoadingEnabled：延迟加载的全局开关。当开启时，所有关联对象都会延迟加载。
+
 aggressiveLazyLoading：当开启时，任何方法的调用都会加载该对象的所有属性。否则，每个属性会按需加载此时就可以实现按需加载，获取的数据是什么，就只会执行相应的sql。此时可通过association和collection中的fetchType属性设置当前的分步查询是否使用延迟加载， fetchType="lazy(延迟加载)|eager(立即加载)"。
+
 ## 动态SQL
 Mybatis框架的动态SQL技术是一种根据特定条件动态拼装SQL语句的功能，它存在的意义是为了解决拼接SQL语句字符串时的痛点问题。
 ### SQL片段
@@ -792,6 +796,7 @@ choose、when、 otherwise相当于if...else if..else
 ## **MyBatis的缓存**
 ### 一级缓存
 一级缓存是**SqlSession**级别的，通过同一个SqlSession查询的数据会被缓存，下次查询相同的数据，就会从缓存中直接获取，不会从数据库重新访问
+
 使一级缓存失效的四种情况：
 
 - 不同的SqlSession对应不同的一级缓存
@@ -801,10 +806,11 @@ choose、when、 otherwise相当于if...else if..else
 ### 二级缓存
 #### 功能介绍
 二级缓存是**SqlSessionFactory**级别，通过同一个SqlSessionFactory创建的SqlSession查询的结果会被缓存；此后若再次执行相同的查询语句，结果就会从缓存中获取。
+
 二级缓存开启的条件：
 
-- 在核心配置文件中，设置全局配置属性cacheEnabled="true"，默认为true，不需要设置
-- 在映射文件中设置标签<cache/>
+- 在核心配置文件中，设置全局配置属性`cacheEnabled="true"`，默认为true，不需要设置
+- 在映射文件中设置标签`<cache/>`
 - 二级缓存必须在SqlSession关闭或提交之后有效
 - 查询的数据所转换的实体类类型必须实现序列化的接口
 
@@ -823,14 +829,18 @@ choose、when、 otherwise相当于if...else if..else
    - 默认情况是不设置，也就是没有刷新间隔，缓存仅仅调用语句时刷新
 - size属性：引用数目，正整数
    - 代表缓存最多可以存储多少个对象，太大容易导致内存溢出
-- readOnly属性：只读， true/false
+- readOnly属性：只读，true/false
    - true：只读缓存；会给所有调用者返回缓存对象的相同实例。因此这些对象不能被修改。这提供了很重要的性能优势。
    - false：读写缓存；会返回缓存对象的拷贝（通过序列化）。这会慢一些，但是安全，因此默认是false。
 ### 缓存查询顺序
 先查询二级缓存，因为二级缓存中可能会有其他程序已经查出来的数据，可以拿来直接使用；
+
 如果二级缓存没有命中，再查询一级缓存；
+
 如果一级缓存也没有命中，则查询数据库；
+
 SqlSession关闭之后，一级缓存中的数据会写入二级缓存。
+
 ### 整合第三方缓存EHCache
 #### **添加依赖**
 ```xml
