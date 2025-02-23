@@ -111,6 +111,7 @@ function App(){
 2. JavaScript的可编程能力
 #### 本质
 JSX不是标准的JS语法，它是 JS的语法扩展，浏览器本身不能识别，需要通过解析工具做解析之后才能在浏览器中使用
+
 ![image.png](https://cdn.jsdelivr.net/gh/Okita1027/knowledge-database-images@main/web/react/202406171502660.png)
 
 #### JS表达式
@@ -136,7 +137,9 @@ function App() {
 export default App;
 ```
 #### 列表渲染
+
 ![image.png](https://cdn.jsdelivr.net/gh/Okita1027/knowledge-database-images@main/web/react/202406171502643.png)
+
 在JSX中可以使用原生js中的`map方法`实现列表渲染。
 
 ```jsx
@@ -178,6 +181,7 @@ function App(){
       {flag && <span>this is span</span>}
       {/* 三目 */}
       {loading ? <span>loading...</span>:<span>this is span</span>}
+      {isLogin ? <span>Jack</span>:<span>请登录</span>}
     </>
   )
 }
@@ -259,6 +263,7 @@ function App(){
 ```
 ### 组件基础
 一个组件就是一个用户界面的一部分，它可以有自己的逻辑和外观，组件之间可以互相嵌套，也可以复用多次
+
 ![image.png](https://cdn.jsdelivr.net/gh/Okita1027/knowledge-database-images@main/web/react/202406171504045.png)
 
 #### 基本使用
@@ -266,7 +271,10 @@ function App(){
 #### 状态管理
 ##### 基础使用
 `useState` 是一个 React Hook（函数），它允许我们向组件添加一个`状态变量`, 从而控制影响组件的渲染结果
-和普通JS变量不同的是，状态变量一旦发生变化组件的视图UI也会跟着变化（数据驱动视图）![image.png](https://cdn.jsdelivr.net/gh/Okita1027/knowledge-database-images@main/web/react/202406171504375.png)
+
+和普通JS变量不同的是，状态变量一旦发生变化组件的视图UI也会跟着变化（数据驱动视图）
+
+![image.png](https://cdn.jsdelivr.net/gh/Okita1027/knowledge-database-images@main/web/react/202406171504375.png)
 
 ```jsx
 import React from "react";
@@ -281,6 +289,7 @@ function App(){
 ```
 ##### 状态修改规则
 状态被认为是只读的，我们应该始终**替换它而不是修改它**, 直接修改状态不能引发视图更新
+
 ![左（×） 右（√）](https://cdn.jsdelivr.net/gh/Okita1027/knowledge-database-images@main/web/react/202406171504209.png "左（×） 右（√）")
 
 ```jsx
@@ -291,6 +300,7 @@ function App(){
 ```
 ##### 修改对象状态
 对于对象类型的状态变量，应该始终给set方法一个**全新的对象**来进行修改
+
 ![左（×） 右（√）](https://cdn.jsdelivr.net/gh/Okita1027/knowledge-database-images@main/web/react/202406171504913.png "左（×） 右（√）")
 
 ```jsx
@@ -418,6 +428,7 @@ uuidv4(); // ⇨ '9b1deb4d-3b7d-4bad-9bdd-2b0d7b3dcb6d'
 ### 表单控制
 #### 受控绑定
 在受控组件中，表单元素的值由 React 的 state 控制。当用户输入时，React 通过更新组件的 state 来反映输入的变化。受控组件中的值始终由 React 控制，并通过 props 将当前值传递给表单元素。
+
 ![image.png](https://cdn.jsdelivr.net/gh/Okita1027/knowledge-database-images@main/web/react/202406171504475.png)
 
 ```jsx
@@ -462,10 +473,12 @@ function App() {
 }
 ```
 ### 组件通信
-组件通信就是组件之间的数据传递, 根据组件嵌套关系的不同，有不同的通信手段和方法![image.png](https://cdn.jsdelivr.net/gh/Okita1027/knowledge-database-images@main/web/react/202406171504351.png)
-A-B 父子通信
-B-C 兄弟通信
-A-E 跨层通信
+组件通信就是组件之间的数据传递, 根据组件嵌套关系的不同，有不同的通信手段和方法
+
+![image.png](https://cdn.jsdelivr.net/gh/Okita1027/knowledge-database-images@main/web/react/202406171504351.png)
+
+| A-B 父子通信 | B-C 兄弟通信 | A-E 跨层通信 |
+| ------------ | ------------ | ------------ |
 
 #### 父子通信——父传子
 ![image.png](https://cdn.jsdelivr.net/gh/Okita1027/knowledge-database-images@main/web/react/202406171504255.png)
@@ -489,11 +502,14 @@ function App(){
 ```
 ##### props说明
 **props可以传递任意的合法数据**，比如数字、字符串、布尔值、数组、对象、函数、JSX
+
 ![image.png](https://cdn.jsdelivr.net/gh/Okita1027/knowledge-database-images@main/web/react/202406171504840.png)
-**props是只读对象**子组件只能读取props中的数据，不能直接进行修改, 父组件的数据只能由父组件修改 
+
+**props是只读对象**子组件只能读取props中的数据，不能直接进行修改, 父组件的数据只能由父组件修改
 
 ##### 特殊的prop-children
 当把内容嵌套在组件的标签内部时，组件会自动在名为children的prop属性中接收该内容
+
 ```jsx
 function Son(props) {
   console.log(props);
@@ -517,7 +533,9 @@ function App() {
 }
 ```
 #### 父子通信——子传父
+
 ![image.png](https://cdn.jsdelivr.net/gh/Okita1027/knowledge-database-images@main/web/react/202406171504191.png)
+
 核心思路：在子组件中调用父组件中的函数并传递参数
 
 ```jsx
@@ -544,6 +562,7 @@ function App() {
 ```
 #### 兄弟通信
 ![image.png](https://cdn.jsdelivr.net/gh/Okita1027/knowledge-database-images@main/web/react/202406171504019.png)
+
 实现思路: 借助 **状态提升** 机制，通过共同的父组件进行兄弟之间的数据传递
 
 1. A组件先通过子传父的方式把数据传递给父组件App
