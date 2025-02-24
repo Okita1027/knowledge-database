@@ -112,7 +112,7 @@ function App(){
 #### 本质
 JSX不是标准的JS语法，它是 JS的语法扩展，浏览器本身不能识别，需要通过解析工具做解析之后才能在浏览器中使用
 
-![image.png](https://cdn.jsdelivr.net/gh/Okita1027/knowledge-database-images@main/web/react/202406171502660.png)
+![](https://cdn.jsdelivr.net/gh/Okita1027/knowledge-database-images@main/web/react/202406171502660.png)
 
 #### JS表达式
 ```jsx
@@ -138,7 +138,7 @@ export default App;
 ```
 #### 列表渲染
 
-![image.png](https://cdn.jsdelivr.net/gh/Okita1027/knowledge-database-images@main/web/react/202406171502643.png)
+![](https://cdn.jsdelivr.net/gh/Okita1027/knowledge-database-images@main/web/react/202406171502643.png)
 
 在JSX中可以使用原生js中的`map方法`实现列表渲染。
 
@@ -264,7 +264,7 @@ function App(){
 ### 组件基础
 一个组件就是一个用户界面的一部分，它可以有自己的逻辑和外观，组件之间可以互相嵌套，也可以复用多次
 
-![image.png](https://cdn.jsdelivr.net/gh/Okita1027/knowledge-database-images@main/web/react/202406171504045.png)
+![](https://cdn.jsdelivr.net/gh/Okita1027/knowledge-database-images@main/web/react/202406171504045.png)
 
 #### 基本使用
 一个组件就是**首字母大写的函数**，内部存放了组件的逻辑和视图UI, 渲染组件只需要把组件当成标签书写即可
@@ -274,7 +274,7 @@ function App(){
 
 和普通JS变量不同的是，状态变量一旦发生变化组件的视图UI也会跟着变化（数据驱动视图）
 
-![image.png](https://cdn.jsdelivr.net/gh/Okita1027/knowledge-database-images@main/web/react/202406171504375.png)
+![](https://cdn.jsdelivr.net/gh/Okita1027/knowledge-database-images@main/web/react/202406171504375.png)
 
 ```jsx
 import React from "react";
@@ -429,7 +429,7 @@ uuidv4(); // ⇨ '9b1deb4d-3b7d-4bad-9bdd-2b0d7b3dcb6d'
 #### 受控绑定
 在受控组件中，表单元素的值由 React 的 state 控制。当用户输入时，React 通过更新组件的 state 来反映输入的变化。受控组件中的值始终由 React 控制，并通过 props 将当前值传递给表单元素。
 
-![image.png](https://cdn.jsdelivr.net/gh/Okita1027/knowledge-database-images@main/web/react/202406171504475.png)
+![](https://cdn.jsdelivr.net/gh/Okita1027/knowledge-database-images@main/web/react/202406171504475.png)
 
 ```jsx
 import { useState } from "react";
@@ -475,13 +475,13 @@ function App() {
 ### 组件通信
 组件通信就是组件之间的数据传递, 根据组件嵌套关系的不同，有不同的通信手段和方法
 
-![image.png](https://cdn.jsdelivr.net/gh/Okita1027/knowledge-database-images@main/web/react/202406171504351.png)
+![](https://cdn.jsdelivr.net/gh/Okita1027/knowledge-database-images@main/web/react/202406171504351.png)
 
 | A-B 父子通信 | B-C 兄弟通信 | A-E 跨层通信 |
-| ------------ | ------------ | ------------ |
+| :----------: | :----------: | :----------: |
 
 #### 父子通信——父传子
-![image.png](https://cdn.jsdelivr.net/gh/Okita1027/knowledge-database-images@main/web/react/202406171504255.png)
+![](https://cdn.jsdelivr.net/gh/Okita1027/knowledge-database-images@main/web/react/202406171504255.png)
 ##### 基础实现
 
 1. 父组件传递数据 - 在子组件标签上绑定属性
@@ -503,7 +503,7 @@ function App(){
 ##### props说明
 **props可以传递任意的合法数据**，比如数字、字符串、布尔值、数组、对象、函数、JSX
 
-![image.png](https://cdn.jsdelivr.net/gh/Okita1027/knowledge-database-images@main/web/react/202406171504840.png)
+![](https://cdn.jsdelivr.net/gh/Okita1027/knowledge-database-images@main/web/react/202406171504840.png)
 
 **props是只读对象**子组件只能读取props中的数据，不能直接进行修改, 父组件的数据只能由父组件修改
 
@@ -534,7 +534,7 @@ function App() {
 ```
 #### 父子通信——子传父
 
-![image.png](https://cdn.jsdelivr.net/gh/Okita1027/knowledge-database-images@main/web/react/202406171504191.png)
+![](https://cdn.jsdelivr.net/gh/Okita1027/knowledge-database-images@main/web/react/202406171504191.png)
 
 核心思路：在子组件中调用父组件中的函数并传递参数
 
@@ -561,7 +561,7 @@ function App() {
 }
 ```
 #### 兄弟通信
-![image.png](https://cdn.jsdelivr.net/gh/Okita1027/knowledge-database-images@main/web/react/202406171504019.png)
+![](https://cdn.jsdelivr.net/gh/Okita1027/knowledge-database-images@main/web/react/202406171504019.png)
 
 实现思路: 借助 **状态提升** 机制，通过共同的父组件进行兄弟之间的数据传递
 
@@ -665,7 +665,7 @@ function SiblingB({ name }) {
 export default SiblingB;
 ```
 #### 跨组件通信
-![image.png](https://cdn.jsdelivr.net/gh/Okita1027/knowledge-database-images@main/web/react/202406171504342.png)
+![](https://cdn.jsdelivr.net/gh/Okita1027/knowledge-database-images@main/web/react/202406171504342.png)
 **实现步骤：**
 
 1. 使用 `createContext`方法创建一个上下文对象Ctx
@@ -789,7 +789,7 @@ useEffect副作用函数的执行时机存在多种情况，根据传入依赖�
 
 #### 清除副作用
 在useEffect中编写的由渲染本身引起的对接组件外部的操作，社区也经常把它叫做副作用操作，比如在useEffect中开启了一个定时器，我们想在组件卸载时把这个定时器再清理掉，这个过程就是清理副作用
-![image.png](https://cdn.jsdelivr.net/gh/Okita1027/knowledge-database-images@main/web/react/202406171505060.png)
+![](https://cdn.jsdelivr.net/gh/Okita1027/knowledge-database-images@main/web/react/202406171505060.png)
 
 > 清除副作用的函数最常见的执行时机是在组件卸载时自动执行
 
@@ -1042,7 +1042,7 @@ const App = () => {
 
 #### 自定义Hook
 自定义Hook必须是以 `**use**`**开头的函数**，通过自定义Hook函数可以用来**实现逻辑的封装和复用**
-![image.png](https://cdn.jsdelivr.net/gh/Okita1027/knowledge-database-images@main/web/react/202406171505964.png)
+![](https://cdn.jsdelivr.net/gh/Okita1027/knowledge-database-images@main/web/react/202406171505964.png)
 
 ```jsx
 // 问题: 布尔切换的逻辑 当前组件耦合在一起的 不方便复用
@@ -1343,7 +1343,7 @@ function App() {
 export default App
 ```
 #### 生命周期
-![image.png](https://cdn.jsdelivr.net/gh/Okita1027/knowledge-database-images@main/web/react/202406171505947.png)
+![](https://cdn.jsdelivr.net/gh/Okita1027/knowledge-database-images@main/web/react/202406171505947.png)
 #### 组件通信
 ##### 父传子
 ```jsx
@@ -1429,7 +1429,7 @@ export default App
 ### 介绍
 Redux 是React最常用的集中状态管理工具，类似于Vue中的Pinia（Vuex），可以独立于框架运行
 作用：通过集中管理的方式管理应用的状态
-![image.png](https://cdn.jsdelivr.net/gh/Okita1027/knowledge-database-images@main/web/react/202406171505216.png)
+![](https://cdn.jsdelivr.net/gh/Okita1027/knowledge-database-images@main/web/react/202406171505216.png)
 **为什么要使用Redux？**
 
 1. 独立于组件，无视组件之间的层级关系，简化通信问题
@@ -1437,7 +1437,7 @@ Redux 是React最常用的集中状态管理工具，类似于Vue中的Pinia（V
 3. 调试工具配套良好，方便调试
 ### 快速体验
 需求：不和任何框架绑定，不使用任何构建工具，使用纯Redux实现计数器
-![image.png](https://cdn.jsdelivr.net/gh/Okita1027/knowledge-database-images@main/web/react/202406171505561.png)
+![](https://cdn.jsdelivr.net/gh/Okita1027/knowledge-database-images@main/web/react/202406171505561.png)
 使用步骤：
 
 1. 定义一个 reducer 函数 （根据当前想要做的修改返回一个新的状态）
@@ -1486,7 +1486,7 @@ Redux 是React最常用的集中状态管理工具，类似于Vue中的Pinia（V
 ```
 ### 数据流架构
 Redux的难点是理解它对于数据修改的规则, 下图动态展示了在整个数据的修改中，数据的流向
-![image.png](https://cdn.jsdelivr.net/gh/Okita1027/knowledge-database-images@main/web/react/202406171505001.png)
+![](https://cdn.jsdelivr.net/gh/Okita1027/knowledge-database-images@main/web/react/202406171505001.png)
 为了职责清晰，Redux代码被分为三个核心的概念，学redux，其实就是学这三个核心概念之间的配合，三个概念分别是:
 
 1. state:  一个对象 存放着我们管理的数据
@@ -1496,7 +1496,7 @@ Redux的难点是理解它对于数据修改的规则, 下图动态展示了在�
 Redux虽然是一个框架无关可以独立运行的插件，但是社区通常还是把它与React绑定在一起使用，以一个计数器案例体验一下Redux + React 的基础使用
 #### 调试工具
 Redux官方提供了针对于Redux的调试工具，支持实时state信息展示，action提交信息查看等
-![image.png](https://cdn.jsdelivr.net/gh/Okita1027/knowledge-database-images@main/web/react/202406171506556.png)
+![](https://cdn.jsdelivr.net/gh/Okita1027/knowledge-database-images@main/web/react/202406171506556.png)
 
 #### 配套工具
 在React中使用redux，官方要求安装俩个其他插件：`Redux Toolkit` 和 `react-redux`
@@ -1504,7 +1504,7 @@ Redux官方提供了针对于Redux的调试工具，支持实时state信息展�
 1.  Redux Toolkit（RTK）- 官方推荐编写Redux逻辑的方式，是一套工具的集合集，简化书写方式 
 2.  react-redux - 用来 链接 Redux 和 React组件 的中间件 
 
-![image.png](https://cdn.jsdelivr.net/gh/Okita1027/knowledge-database-images@main/web/react/202406171506264.png)
+![](https://cdn.jsdelivr.net/gh/Okita1027/knowledge-database-images@main/web/react/202406171506264.png)
 #### 配置基础环境
 
 1. 使用 CRA 快速创建 React 项目
@@ -1522,7 +1522,7 @@ npm i @reduxjs/toolkit  react-redux
 npm run start
 ```
 #### store目录结构设计
-![image.png](https://cdn.jsdelivr.net/gh/Okita1027/knowledge-database-images@main/web/react/202406171506517.png)
+![](https://cdn.jsdelivr.net/gh/Okita1027/knowledge-database-images@main/web/react/202406171506517.png)
 
 1.  通常集中状态管理的部分都会单独创建一个单独的 `store` 目录 
 2.  应用通常会有很多个子store模块，所以创建一个 `modules` 目录，在内部编写业务分类的子store 
@@ -1530,7 +1530,7 @@ npm run start
 ### Redux与React案例
 案例：实现计数器
 #### 整体路径
-![image.png](https://cdn.jsdelivr.net/gh/Okita1027/knowledge-database-images@main/web/react/202406171506931.png)
+![](https://cdn.jsdelivr.net/gh/Okita1027/knowledge-database-images@main/web/react/202406171506931.png)
 #### 使用React Toolkit 创建 counterStore
 ```javascript
 import { createSlice } from "@reduxjs/toolkit";
@@ -1598,7 +1598,7 @@ root.render(
 ```
 #### React组件使用store中的数据
 在React组件中使用store中的数据，需要用到一个钩子函数`useSelector`，它的作用是把store中的数据映射到组件中，使用样例如下：
-![image.png](https://cdn.jsdelivr.net/gh/Okita1027/knowledge-database-images@main/web/react/202406171506407.png)
+![](https://cdn.jsdelivr.net/gh/Okita1027/knowledge-database-images@main/web/react/202406171506407.png)
 
 #### React组件修改store中的数据
 React组件中修改store中的数据需要借助另外一个hook函数`useDispatch`，它的作用是生成提交action对象的dispatch函数，使用样例如下：
@@ -1625,12 +1625,12 @@ export default App;
 ```
 ### 提交action传参
 需求：组件中有俩个按钮 `add to 10` 和 `add to 20` 可以直接把count值修改到对应的数字，目标count值是在组件中传递过去的，需要在提交action的时候传递参数
-![image.png](https://cdn.jsdelivr.net/gh/Okita1027/knowledge-database-images@main/web/react/202406171506487.png)
+![](https://cdn.jsdelivr.net/gh/Okita1027/knowledge-database-images@main/web/react/202406171506487.png)
 实现方式：在reducers的同步修改方法中添加action对象参数，在调用actionCreater的时候传递参数，参数会被传递到action对象payload属性上
-![image.png](https://cdn.jsdelivr.net/gh/Okita1027/knowledge-database-images@main/web/react/202406171506458.png)
+![](https://cdn.jsdelivr.net/gh/Okita1027/knowledge-database-images@main/web/react/202406171506458.png)
 
 ### 异步action处理
-![image.png](https://cdn.jsdelivr.net/gh/Okita1027/knowledge-database-images@main/web/react/202406171506856.png)
+![](https://cdn.jsdelivr.net/gh/Okita1027/knowledge-database-images@main/web/react/202406171506856.png)
 实现步骤
 
 1. 创建store的写法保持不变，配置好同步修改状态的方法
@@ -1843,7 +1843,7 @@ ReactDOM.createRoot(document.getElementById("root")).render(
 ```
 ### 路由导航
 路由系统中的多个路由之间需要进行路由跳转，并且在跳转的同时有可能需要传递参数进行通信
-![image.png](https://cdn.jsdelivr.net/gh/Okita1027/knowledge-database-images@main/web/react/202406171506558.png)
+![](https://cdn.jsdelivr.net/gh/Okita1027/knowledge-database-images@main/web/react/202406171506558.png)
 
 #### 声明式导航
 声明式导航是指通过在模版中通过 `<Link/>` 组件描述出要跳转到哪里去，比如后台管理系统的左侧菜单通常使用这种方式进行
@@ -1853,12 +1853,12 @@ ReactDOM.createRoot(document.getElementById("root")).render(
 
 #### 编程式导航
 编程式导航是指通过 `useNavigate` 钩子得到导航方法，然后通过调用方法以命令式的形式进行路由跳转，比如想在登录请求完毕之后跳转就可以选择这种方式，更加灵活
-![image.png](https://cdn.jsdelivr.net/gh/Okita1027/knowledge-database-images@main/web/react/202406171507297.png)
+![](https://cdn.jsdelivr.net/gh/Okita1027/knowledge-database-images@main/web/react/202406171507297.png)
 语法说明：通过调用`navigate`方法传入地址path实现跳转
 
 #### 导航传参
 
- ![image.png](https://cdn.jsdelivr.net/gh/Okita1027/knowledge-database-images@main/web/react/202406171507570.png)
+ ![](https://cdn.jsdelivr.net/gh/Okita1027/knowledge-database-images@main/web/react/202406171507570.png)
 
 ##### searchParams传参
 ```jsx
@@ -1957,7 +1957,7 @@ export default Article;
 ### 嵌套路由
 #### 概念
 在一级路由中又内嵌了其他路由，这种关系就叫做嵌套路由，嵌套至一级路由内的路由又称作二级路由
-![image.png](https://cdn.jsdelivr.net/gh/Okita1027/knowledge-database-images@main/web/react/202406171508067.png)
+![](https://cdn.jsdelivr.net/gh/Okita1027/knowledge-database-images@main/web/react/202406171508067.png)
 
 #### 嵌套路由配置
 实现步骤
@@ -1965,7 +1965,7 @@ export default Article;
 1. 使用`children`属性配置路由嵌套关系  
 2. 使用`<Outlet/>`组件配置二级路由渲染位置
 
-![image.png](https://cdn.jsdelivr.net/gh/Okita1027/knowledge-database-images@main/web/react/202406171508913.png)
+![](https://cdn.jsdelivr.net/gh/Okita1027/knowledge-database-images@main/web/react/202406171508913.png)
 ```jsx
 import { Link, Outlet } from "react-router-dom";
 
@@ -2011,7 +2011,7 @@ export default router;
 ```
 #### 默认二级路由
 当访问的是一级路由时，默认的二级路由组件可以得到渲染，只需要在二级路由的位置去掉`path`，设置`index`属性为`true`
-![image.png](https://cdn.jsdelivr.net/gh/Okita1027/knowledge-database-images@main/web/react/202406171508338.png)
+![](https://cdn.jsdelivr.net/gh/Okita1027/knowledge-database-images@main/web/react/202406171508338.png)
 
 #### 404路由配置
 场景：当浏览器输入url的路径在整个路由配置中都找不到对应的 `path`，为了用户体验，可以配置兜底组件渲染
@@ -2020,7 +2020,7 @@ export default router;
 1. 准备一个NotFound组件
 2. 在路由表数组的末尾，以`*`号作为路由`path`配置路由
 
-![image.png](https://cdn.jsdelivr.net/gh/Okita1027/knowledge-database-images@main/web/react/202406171508873.png)
+![](https://cdn.jsdelivr.net/gh/Okita1027/knowledge-database-images@main/web/react/202406171508873.png)
 #### 2种路由模式
 各个主流框架的路由常用的路由模式有俩种，history模式和hash模式, ReactRouter分别由 `createBrowerRouter` 和 `createHashRouter` 函数负责创建
 
@@ -2184,7 +2184,7 @@ export default useChannelStore
 
 3. 使用
 
-![image.png](https://cdn.jsdelivr.net/gh/Okita1027/knowledge-database-images@main/web/react/202406171508204.png)
+![](https://cdn.jsdelivr.net/gh/Okita1027/knowledge-database-images@main/web/react/202406171508204.png)
 ## React&TypeScript
 ### useState
 #### 简单场景
@@ -2395,7 +2395,7 @@ function App(){
 ## Ant Design Mobile
 ### 主题定制
 [主题 - Ant Design Mobile](https://ant-design-mobile.antgroup.com/zh/guide/theming)
-![image.png](https://cdn.jsdelivr.net/gh/Okita1027/knowledge-database-images@main/web/react/202406171508031.png)
+![](https://cdn.jsdelivr.net/gh/Okita1027/knowledge-database-images@main/web/react/202406171508031.png)
 ```javascript
 import {Button} from "antd-mobile";
 
