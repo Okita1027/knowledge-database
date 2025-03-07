@@ -110,7 +110,7 @@ function App(){
 1. HTML的声明式模版写法
 2. JavaScript的可编程能力
 #### 本质
-JSX不是标准的JS语法，它是 JS的语法扩展，浏览器本身不能识别，需要通过解析工具做解析之后才能在浏览器中使用
+JSX不是标准的JS语法，它是JS的语法扩展，浏览器本身不能识别，需要通过解析工具做解析之后才能在浏览器中使用
 
 ![](https://cdn.jsdelivr.net/gh/Okita1027/knowledge-database-images@main/web/react/202406171502660.png)
 
@@ -913,6 +913,7 @@ export default App
 - 如果有复杂的状态逻辑,多个子值需要共享逻辑、引用追踪等,使用`useReducer`会更加适合。
 #### useMemo
 作用：缓存计算结果
+
 语法：`const memoizedValue = useMemo(() => computeExpensiveValue(a, b), [a, b]);`
 
 - computeExpensiveValue(a, b): 你需要缓存的那个"昂贵"计算的函数,它应该是一个纯函数。
