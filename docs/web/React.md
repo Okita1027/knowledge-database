@@ -891,6 +891,7 @@ export default App
 ```
 ##### 对比useState
 `useState`和`useReducer`都是React hooks中用于管理状态的钩子函数,但它们在使用场景和方式上存在一些差异:
+
 **useState**:
 
 - `useState`主要用于管理简单的状态,如字符串、数字、布尔值、对象或数组等。
@@ -1438,7 +1439,9 @@ export default App
 ### 介绍
 Redux 是React最常用的集中状态管理工具，类似于Vue中的Pinia（Vuex），可以独立于框架运行
 作用：通过集中管理的方式管理应用的状态
+
 ![](https://cdn.jsdelivr.net/gh/Okita1027/knowledge-database-images@main/web/react/202406171505216.png)
+
 **为什么要使用Redux？**
 
 1. 独立于组件，无视组件之间的层级关系，简化通信问题
@@ -1446,7 +1449,9 @@ Redux 是React最常用的集中状态管理工具，类似于Vue中的Pinia（V
 3. 调试工具配套良好，方便调试
 ### 快速体验
 需求：不和任何框架绑定，不使用任何构建工具，使用纯Redux实现计数器
+
 ![](https://cdn.jsdelivr.net/gh/Okita1027/knowledge-database-images@main/web/react/202406171505561.png)
+
 使用步骤：
 
 1. 定义一个 reducer 函数 （根据当前想要做的修改返回一个新的状态）
@@ -1495,7 +1500,9 @@ Redux 是React最常用的集中状态管理工具，类似于Vue中的Pinia（V
 ```
 ### 数据流架构
 Redux的难点是理解它对于数据修改的规则, 下图动态展示了在整个数据的修改中，数据的流向
+
 ![](https://cdn.jsdelivr.net/gh/Okita1027/knowledge-database-images@main/web/react/202406171505001.png)
+
 为了职责清晰，Redux代码被分为三个核心的概念，学redux，其实就是学这三个核心概念之间的配合，三个概念分别是:
 
 1. state:  一个对象 存放着我们管理的数据
@@ -1505,6 +1512,7 @@ Redux的难点是理解它对于数据修改的规则, 下图动态展示了在�
 Redux虽然是一个框架无关可以独立运行的插件，但是社区通常还是把它与React绑定在一起使用，以一个计数器案例体验一下Redux + React 的基础使用
 #### 调试工具
 Redux官方提供了针对于Redux的调试工具，支持实时state信息展示，action提交信息查看等
+
 ![](https://cdn.jsdelivr.net/gh/Okita1027/knowledge-database-images@main/web/react/202406171506556.png)
 
 #### 配套工具
@@ -1607,6 +1615,7 @@ root.render(
 ```
 #### React组件使用store中的数据
 在React组件中使用store中的数据，需要用到一个钩子函数`useSelector`，它的作用是把store中的数据映射到组件中，使用样例如下：
+
 ![](https://cdn.jsdelivr.net/gh/Okita1027/knowledge-database-images@main/web/react/202406171506407.png)
 
 #### React组件修改store中的数据
@@ -1634,12 +1643,17 @@ export default App;
 ```
 ### 提交action传参
 需求：组件中有俩个按钮 `add to 10` 和 `add to 20` 可以直接把count值修改到对应的数字，目标count值是在组件中传递过去的，需要在提交action的时候传递参数
+
 ![](https://cdn.jsdelivr.net/gh/Okita1027/knowledge-database-images@main/web/react/202406171506487.png)
+
 实现方式：在reducers的同步修改方法中添加action对象参数，在调用actionCreater的时候传递参数，参数会被传递到action对象payload属性上
+
 ![](https://cdn.jsdelivr.net/gh/Okita1027/knowledge-database-images@main/web/react/202406171506458.png)
 
 ### 异步action处理
+
 ![](https://cdn.jsdelivr.net/gh/Okita1027/knowledge-database-images@main/web/react/202406171506856.png)
+
 实现步骤
 
 1. 创建store的写法保持不变，配置好同步修改状态的方法
@@ -1741,7 +1755,9 @@ npm i react-router-dom
 npm run dev
 ```
 ### 快速上手
+
 ![需求说明](https://cdn.jsdelivr.net/gh/Okita1027/knowledge-database-images@main/web/react/202406171506418.png "需求说明")
+
 ![文件目录结构](https://cdn.jsdelivr.net/gh/Okita1027/knowledge-database-images@main/web/react/202406171506485.png "文件目录结构")
 
 ```jsx
@@ -1852,6 +1868,7 @@ ReactDOM.createRoot(document.getElementById("root")).render(
 ```
 ### 路由导航
 路由系统中的多个路由之间需要进行路由跳转，并且在跳转的同时有可能需要传递参数进行通信
+
 ![](https://cdn.jsdelivr.net/gh/Okita1027/knowledge-database-images@main/web/react/202406171506558.png)
 
 #### 声明式导航
@@ -1862,7 +1879,9 @@ ReactDOM.createRoot(document.getElementById("root")).render(
 
 #### 编程式导航
 编程式导航是指通过 `useNavigate` 钩子得到导航方法，然后通过调用方法以命令式的形式进行路由跳转，比如想在登录请求完毕之后跳转就可以选择这种方式，更加灵活
+
 ![](https://cdn.jsdelivr.net/gh/Okita1027/knowledge-database-images@main/web/react/202406171507297.png)
+
 语法说明：通过调用`navigate`方法传入地址path实现跳转
 
 #### 导航传参
@@ -1870,6 +1889,7 @@ ReactDOM.createRoot(document.getElementById("root")).render(
  ![](https://cdn.jsdelivr.net/gh/Okita1027/knowledge-database-images@main/web/react/202406171507570.png)
 
 ##### searchParams传参
+
 ```jsx
 import { useNavigate } from "react-router-dom";
 
@@ -1966,6 +1986,7 @@ export default Article;
 ### 嵌套路由
 #### 概念
 在一级路由中又内嵌了其他路由，这种关系就叫做嵌套路由，嵌套至一级路由内的路由又称作二级路由
+
 ![](https://cdn.jsdelivr.net/gh/Okita1027/knowledge-database-images@main/web/react/202406171508067.png)
 
 #### 嵌套路由配置
@@ -2020,6 +2041,7 @@ export default router;
 ```
 #### 默认二级路由
 当访问的是一级路由时，默认的二级路由组件可以得到渲染，只需要在二级路由的位置去掉`path`，设置`index`属性为`true`
+
 ![](https://cdn.jsdelivr.net/gh/Okita1027/knowledge-database-images@main/web/react/202406171508338.png)
 
 #### 404路由配置
@@ -2404,7 +2426,9 @@ function App(){
 ## Ant Design Mobile
 ### 主题定制
 [主题 - Ant Design Mobile](https://ant-design-mobile.antgroup.com/zh/guide/theming)
+
 ![](https://cdn.jsdelivr.net/gh/Okita1027/knowledge-database-images@main/web/react/202406171508031.png)
+
 ```javascript
 import {Button} from "antd-mobile";
 
