@@ -1051,7 +1051,8 @@ const App = () => {
 4. 当点击按钮时,调用 `inputRef.current.focus()`  能够聚焦文本输入框。
 
 #### 自定义Hook
-自定义Hook必须是以 `**use**`**开头的函数**，通过自定义Hook函数可以用来**实现逻辑的封装和复用**
+自定义Hook必须是以 `use`**开头的函数**，通过自定义Hook函数可以用来**实现逻辑的封装和复用**
+
 ![](https://cdn.jsdelivr.net/gh/Okita1027/knowledge-database-images@main/web/react/202406171505964.png)
 
 ```jsx
