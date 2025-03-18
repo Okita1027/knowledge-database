@@ -10,7 +10,7 @@ export default defineUserConfig({
 	// 在开发服务器启动后打开浏览器
 	open: false,
 
-	base: "/knowledge-database/",
+	base: "/kd/",
 
 	lang: "zh-CN",
 	title: "沖田さんの知識ベース",
