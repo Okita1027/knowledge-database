@@ -13,7 +13,7 @@ export default defineUserConfig({
 	// 在开发服务器启动后打开浏览器
 	open: false,
 
-	base: isGitHub ? "/kd/" : isNetlify ? "/" : "/",
+	base: isGitHub ? "/kd/" : isNetlify ? "/" : "/kd/",
 	// base: "/kd/",
 
 	lang: "zh-CN",
