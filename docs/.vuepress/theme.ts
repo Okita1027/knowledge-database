@@ -17,7 +17,7 @@ export default hopeTheme({
     navbarTitle: "沖田さんの知識ベース",
 
     // 默认为 GitHub. 同时也可以是一个完整的 URL
-    repo: "https://github.com/Okita1027/knowledge-database/",
+    repo: "https://github.com/Okita1027/kd/",
     // 自定义仓库链接文字。默认从 `repo` 中自动推断为
     // "GitHub" / "GitLab" / "Gitee" / "Bitbucket" 其中之一，或是 "Source"。
     repoLabel: "GitHub",
